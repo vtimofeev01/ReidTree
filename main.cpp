@@ -49,25 +49,6 @@ int main() {
     printf("read %zu\n", main_data.size());
 
 
-//    rt.print();
-//    pr_queue::FindMaxQueue<int> apq(.01);
-//    int a1 = 10, a2 = 30, a3 = 1, a4 = 11, a5 = 12,
-//    a6 = 31, a7 = 36, a8=29, a9 = 28;
-//    apq.Push(a1, .1);
-//    apq.Push(a5, .12);
-//    apq.Push(a2, .3);
-//    apq.Push(a6, .31);
-//    apq.Push(a7, .36);
-//    apq.Push(a8, .29);
-//    apq.Push(a9, .28);
-//    apq.Push(a3, .014);
-//    apq.Push(a4, .031);
-//
-//    while (!apq.empty()){
-//        auto v = apq.get();
-//        std::cout << v << std::endl;
-//    }
-
 //    std::vector<reid_tree::Similarity> ress;
     reid_tree::VecParameter test{-0.066568, -0.0343255, 0.429685, 0.191537, 0.0241271, 0.148219, -0.138363, -0.0635369,
                                  -0.485028, -0.409273, 0.346789, -0.0769717, -0.364237, -0.150487, -0.0331914,
@@ -102,21 +83,11 @@ int main() {
                                  -0.0189216, 0.223113, -0.088014, -0.265959, -0.0932453, -0.472296, 0.50496, -0.128372,
                                  0.155315, -0.484559, -0.745536, -0.351254, 0.397052, 0.523452, -0.537274, 0.247419,
                                  0.149012, -0.0676735, -0.158258};
-//
-//    for (auto i=0; i<5; i++)
-//    {
-//        test[i] = 1;
-//        auto res = rt.nearst(test);
-//        ress.push_back(res);
-//        std::cout << "N:" << res << std::endl;
-//    }
-//
-//    std::cout << "------------------res---------------" << std::endl;
-//    for (auto r:ress) std::cout << "res:" << r << std::endl;
+
 
     auto r = rt & rt2;
     std::cout << "res:" << r << std::endl;
-//    rt.output_DOT();
-//    auto tsz = main_data[20].size();
-//    printf("best fit is: %f vec_size %lu", rt.nearst(main_data[20]), tsz);
+
+    auto tsz = main_data[20].size();
+    printf("best fit is: %f vec_size %lu", rt.nearst(main_data[20]), tsz);
 }
