@@ -11,11 +11,10 @@ int main() {
     reid_tree::ReidTree rt, rt2;
     reid_tree::VecParameter test2;
     rt.start_max_node_2_node_cs_level = .55;
-    auto vec_n = 200;
     auto counter = 0;
     reid_tree::VecVecParameter main_data;
     std::vector<double> mainVector;
-    std::ifstream data("../datas_0001.csv");
+    std::ifstream data("../samples/datas_0001.csv");
     unsigned long len = -1;
     if (data.is_open()) {
         std::string line;
