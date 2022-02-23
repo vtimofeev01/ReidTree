@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.21)
+project(ReidTree)
+set(TARGET_NAME ReidTree)
+set(CMAKE_CXX_STANDARD 17)
+file (GLOB MAIN_SRC *.c *.cpp)
+file (GLOB MAIN_HEADERS *.h)
+file (GLOB MAIN_HPP *.hpp)
+add_executable(${TARGET_NAME} ${MAIN_SRC} ${MAIN_HEADERS} ${MAIN_HPP})
