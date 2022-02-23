@@ -8,8 +8,8 @@ Example of Ttree
 left - maximum similarity on each level
 Node to Node connections - similarity between nodes
 blue/red - example of search
-  red - best fit path
-  blue - all other checked values
+ - red - best fit path
+ -  blue - all other checked values
          can be reduced by parameters of Tree 
 
 
