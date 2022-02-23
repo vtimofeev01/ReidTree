@@ -8,7 +8,7 @@ How it works:<br>
 - tree is made on fixed levels<br>
 - on each level is set the maximum similarity to make a new branch, otherwise it goes to next level<br>
 - there is a "stop" value, when the search stops<br>
-- to reduce a size of tree is set the value, when similerity reaches them vector will not be added<br>
+- to reduce a size of tree is set the value, when similarity reaches them vector will not be added<br>
  
 <br>
 There is example:<br>
