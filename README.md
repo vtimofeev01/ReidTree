@@ -5,11 +5,11 @@ Was made for
 - hierarchy is made on maximum cross similarity on each level
 
 Example of Ttree
-left - maximum similarity on each level
-Node to Node connections - similarity between nodes
-blue/red - example of search
- - red - best fit path
- -  blue - all other checked values
+- left - maximum similarity on each level
+- Node to Node connections - similarity between nodes
+- blue/red - example of search
+- - red - best fit path
+- -  blue - all other checked values
          can be reduced by parameters of Tree 
 
 
