@@ -14,7 +14,7 @@ namespace pr_queue {
         std::vector<std::pair<Score, T>> data_;
 
         FindMaxQueue()= default;;
-        explicit FindMaxQueue(Score radius):delta(radius) {};
+        [[maybe_unused]]  explicit FindMaxQueue(Score radius):delta(radius) {};
 
         int Push(T data, Score score) {
             int out(1);

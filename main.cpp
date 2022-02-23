@@ -7,12 +7,15 @@
 
 
 int main() {
-
-    reid_tree::ReidTree rt, rt2;
-    reid_tree::VecParameter test2;
+    using FT = float;
+    using ft_tree = reid_tree::ReidTree<FT>;
+    using VecParameter=std::vector<FT>;
+    using VecVecParameter = std::vector<std::vector<FT>> ;
+    ft_tree rt, rt2;
+    VecParameter test2;
     rt.start_max_node_2_node_cs_level = .55;
     auto counter = 0;
-    reid_tree::VecVecParameter main_data;
+    VecVecParameter main_data;
     std::vector<double> mainVector;
     std::ifstream data("../samples/datas_0001.csv");
     unsigned long len = -1;
@@ -23,19 +26,18 @@ int main() {
 
             std::istringstream ss{line};
             std::string token;
-            reid_tree::VecParameter reid;
+            VecParameter reid;
             while (std::getline(ss, token, ',')) {
                 if (!token.empty()) {
                     char *n_str;
                     auto d = std::strtof(token.c_str(), &n_str);
-                    if (d == 0 && n_str == token.c_str()) printf("WHAT THE FUCK %s", token.c_str());
+                    if (d == 0 && n_str == token.c_str()) printf("WHAT THE .... %s", token.c_str());
                     reid.push_back(d);
                 }
             }
             if (len == -1) len = reid.size();
             assert(len == reid.size());
             main_data.push_back(reid);
-//                if (counter == (vec_n - 2)) for (auto v: reid) test2.push_back(v);
             if (counter % 2 == 0) rt.add_vector(reid);
             else rt2.add_vector(reid);
 
@@ -49,7 +51,7 @@ int main() {
 
 
 //    std::vector<reid_tree::Similarity> ress;
-    reid_tree::VecParameter test{-0.066568, -0.0343255, 0.429685, 0.191537, 0.0241271, 0.148219, -0.138363, -0.0635369,
+    VecParameter test{-0.066568, -0.0343255, 0.429685, 0.191537, 0.0241271, 0.148219, -0.138363, -0.0635369,
                                  -0.485028, -0.409273, 0.346789, -0.0769717, -0.364237, -0.150487, -0.0331914,
                                  -0.331558, -0.228503, -0.203791, 0.0284306, -0.0865402, 0.408311, -0.340878, -0.199868,
                                  0.673801, -0.289081, 0.17251, -0.173779, -0.20317, -0.119926, 0.00899191, 0.130852,
