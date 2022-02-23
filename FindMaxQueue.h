@@ -2,21 +2,20 @@
 
 #include <vector>
 
-namespace pr_queue {
-    typedef float Score;
+namespace reid_tree {
 
-    template<typename T>
+    template<typename T_obj, typename Tv>
     class FindMaxQueue {
 
     public:
-        Score max_value{0};
-        Score delta = .05;
-        std::vector<std::pair<Score, T>> data_;
+        Tv max_value{0};
+        Tv delta = .05;
+        std::vector<std::pair<Tv, T_obj>> data_;
 
         FindMaxQueue()= default;;
-        [[maybe_unused]]  explicit FindMaxQueue(Score radius):delta(radius) {};
+        [[maybe_unused]]  explicit FindMaxQueue(Tv radius):delta(radius) {};
 
-        int Push(T data, Score score) {
+        int Push(T_obj data, Tv score) {
             int out(1);
             if (score > max_value) { max_value = score;
                 out = 2;
@@ -35,7 +34,7 @@ namespace pr_queue {
             return out;
         }
 
-        T get() {
+        T_obj get() {
             auto out = data_.front();
             data_.erase(data_.begin());
             return out.second;

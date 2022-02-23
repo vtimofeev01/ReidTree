@@ -10,8 +10,11 @@
 
 namespace reid_tree {
     template <class T>
-    class ReidTree {
 
+    class ReidTree {
+        using TNode=Node<T>;
+        using pTNode = TNode*;
+        using pNode2=std::pair<pTNode, pTNode> ;
     public:
         // root will start their children with this cross
         T start_max_node_2_node_cs_level = DEFAULT_MIN_START_LEVEL;
@@ -21,14 +24,14 @@ namespace reid_tree {
         T similarity_for_same_person = .95;
         // when similarity reaches this value vector can not be stored
         T not_to_add = 1 - step_node_2_node / 2;
-        Node<T> *root_ = nullptr;
+        TNode *root_ = nullptr;
         Id counter = 1;
         // to check added Node length and to reserve memory
         unsigned long default_vec_len = VEC_LEN;
 
         ReidTree()  = default;
 
-        static T node_to_node_similarity(Node<T> &a, Node<T> &b) {
+        static T node_to_node_similarity(TNode &a, TNode &b) {
             T xx = 0, xy = 0, yy = 0;
             auto size1 = a.n_data_size;
             for (int index = 0; index < size1; index++) {
@@ -39,7 +42,7 @@ namespace reid_tree {
             return (T) xy / ((T) std::sqrt(xx * yy) + 1e-6f);
         }
 
-        static T vec_to_node_similarity(std::vector<T> vec, Node<T> &b) {
+        static T vec_to_node_similarity(std::vector<T> vec, TNode &b) {
             T xx = 0, xy = 0, yy = 0;
             auto size1 = vec.size();
             for (int index = 0; index < size1; index++) {
@@ -65,14 +68,14 @@ namespace reid_tree {
         Id add_vector(std::vector<T> data_) {
             T max_child_level = start_max_node_2_node_cs_level;
             if (root_ == nullptr) {
-                root_ = new Node<T>(counter, data_);
+                root_ = new TNode(counter, data_);
                 root_->max_node_2_node_difference = max_child_level;
                 default_vec_len = data_.size();
                 counter++;
                 return counter;
             }
             assert(data_.size() == default_vec_len);
-            Node<T> *cur = root_;
+            TNode *cur = root_;
             T cur_sim;
             while (cur != nullptr) {
                 cur_sim = vec_to_node_similarity(data_, *cur);
@@ -116,11 +119,11 @@ namespace reid_tree {
         // find nears value by vec/ comments - output data to insert in .DOT to see what was looked
         [[maybe_unused]] T nearst(std::vector<T> data_) const {
             int nodes_passed = 1;
-            pr_queue::FindMaxQueue<reid_tree::Node<T> *> q(step_node_2_node * 2);
+            reid_tree::FindMaxQueue<pTNode, T> q(step_node_2_node * 2);
             q.Push(root_, vec_to_node_similarity(data_, *root_));
 #ifdef RT_OUTPUT_DOT_DATA
             std::vector<unsigned long> best_path;
-            std::vector<Node<T> *> all_path;
+            std::vector<pTNode> all_path;
             best_path.push_back(root_->n_id);
             all_path.push_back(root_);
 #endif
@@ -157,16 +160,14 @@ namespace reid_tree {
         };
 
         T operator&(ReidTree &b) {
-            using TNode=Node<T>;
-            typedef std::pair<TNode *, TNode *> pNode2;
-            pr_queue::FindMaxQueue<pNode2> q(step_node_2_node * 3);
+            reid_tree::FindMaxQueue<pNode2, T> q(step_node_2_node * 3);
             T cs;
             int node_calculated{1};
             cs = node_to_node_similarity(*root_, *(b.root_));
             if (cs > similarity_for_same_person) return cs;
             q.Push(std::make_pair(root_, b.root_), cs);
             while (!q.empty()) {
-                auto[cn1, cn2] = q.get();
+                auto [cn1, cn2] = q.get();
                 if (cn1->children.empty() && cn2->children.empty()) {
                     return q.max_value;
                 } else if (!cn1->children.empty() && !cn2->children.empty()) {
@@ -199,9 +200,7 @@ namespace reid_tree {
             return q.max_value;
         }
 
-        ~ReidTree() {
-            delete root_;
-        };
+        ~ReidTree() {delete root_;};
         // outputs to screen tree code in dot format for later look
         [[maybe_unused]] void output_DOT() const {
 
@@ -209,7 +208,7 @@ namespace reid_tree {
 
             std::cout << "graph tree {" << std::endl;
             std::cout.precision(3);
-            std::queue<Node<T> *> q;
+            std::queue<pTNode> q;
 
             q.push(root_);
             levels[(int) (1000 * (root_->max_node_2_node_difference - step_node_2_node))].insert(root_->n_id);
