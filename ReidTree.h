@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cmath>
 #include <algorithm>
 #include <map>
@@ -9,12 +10,12 @@
 #include "FindMaxQueue.h"
 
 namespace reid_tree {
-    template <class T>
+    template<class T>
 
     class ReidTree {
-        using TNode=Node<T>;
-        using pTNode = TNode*;
-        using pNode2=std::pair<pTNode, pTNode> ;
+        using TNode = Node<T>;
+        using pTNode = TNode *;
+        using pNode2 = std::pair<pTNode, pTNode>;
     public:
         // root will start their children with this cross
         T start_max_node_2_node_cs_level = DEFAULT_MIN_START_LEVEL;
@@ -29,7 +30,7 @@ namespace reid_tree {
         // to check added Node length and to reserve memory
         unsigned long default_vec_len = VEC_LEN;
 
-        ReidTree()  = default;
+        ReidTree() = default;
 
         static T node_to_node_similarity(TNode &a, TNode &b) {
             T xx = 0, xy = 0, yy = 0;
@@ -76,11 +77,10 @@ namespace reid_tree {
             }
             assert(data_.size() == default_vec_len);
             TNode *cur = root_;
-            T cur_sim;
+            T cur_sim = vec_to_node_similarity(data_, *cur);
+            // too similar
+            if (cur_sim >= not_to_add) return 0;
             while (cur != nullptr) {
-                cur_sim = vec_to_node_similarity(data_, *cur);
-                // too similar
-                if (cur_sim >= not_to_add) return 0;
                 // not too similar but no children
                 if (cur->children.empty()) {
                     cur->children.emplace_back(counter, data_);
@@ -114,6 +114,61 @@ namespace reid_tree {
                 if (cur_sim > not_to_add) return 0;
             }
             return 0;
+        }
+
+        // get VecParameter return similarity
+        T add_vector_return_cs(std::vector<T> data_) {
+            T max_child_level = start_max_node_2_node_cs_level;
+            T max_cs_overall;
+            if (root_ == nullptr) {
+                root_ = new TNode(counter, data_);
+                root_->max_node_2_node_difference = max_child_level;
+                default_vec_len = data_.size();
+                counter++;
+                return (T) 1;
+            }
+            assert(data_.size() == default_vec_len);
+            TNode *cur = root_;
+            // check max sim
+            max_cs_overall = vec_to_node_similarity(data_, *cur);
+            if (max_cs_overall >= not_to_add) return max_cs_overall;
+
+            while (cur != nullptr) {
+
+                // not too similar but no children
+                if (cur->children.empty()) {
+                    cur->children.emplace_back(counter, data_);
+                    cur->children.back().max_node_2_node_difference = max_child_level;
+                    counter++;
+                    return max_cs_overall;
+                }
+                // enumerate vectors
+                T sim, max_sim = -1;
+                int max_ix = -1;
+                for (auto i = 0; i < cur->children.size(); i++) {
+                    sim = vec_to_node_similarity(data_, cur->children[i]);
+
+                    // find max similarity
+                    if (sim > max_cs_overall) max_cs_overall = sim;
+                    // if found not_to_add - no more sense
+                    if (sim > not_to_add) return max_cs_overall;
+                    if (sim > max_sim) {
+                        max_sim = sim;
+                        max_ix = i;
+                    }
+                }
+                if (max_sim < cur->max_node_2_node_difference) {
+                    cur->children.emplace_back(counter, data_);
+                    cur->children.back().max_node_2_node_difference = max_child_level;
+                    counter++;
+                    return max_cs_overall;
+                } else {
+                    cur = &(*cur).children[max_ix];
+                    max_child_level += step_node_2_node;
+                }
+                if (max_cs_overall > not_to_add) return max_cs_overall;
+            }
+            return max_cs_overall;
         }
 
         // find nears value by vec/ comments - output data to insert in .DOT to see what was looked
@@ -167,7 +222,7 @@ namespace reid_tree {
             if (cs > similarity_for_same_person) return cs;
             q.Push(std::make_pair(root_, b.root_), cs);
             while (!q.empty()) {
-                auto [cn1, cn2] = q.get();
+                auto[cn1, cn2] = q.get();
                 if (cn1->children.empty() && cn2->children.empty()) {
                     return q.max_value;
                 } else if (!cn1->children.empty() && !cn2->children.empty()) {
@@ -200,7 +255,8 @@ namespace reid_tree {
             return q.max_value;
         }
 
-        ~ReidTree() {delete root_;};
+        ~ReidTree() { delete root_; };
+
         // outputs to screen tree code in dot format for later look
         [[maybe_unused]] void output_DOT() const {
 
@@ -252,6 +308,9 @@ namespace reid_tree {
 
         };
 
+        bool empty() {return root_ == nullptr;}
+
+        int size() {return counter;}
     };
 
 }
