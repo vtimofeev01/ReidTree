@@ -5,4 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 file (GLOB MAIN_SRC *.c *.cpp)
 file (GLOB MAIN_HEADERS *.h)
 file (GLOB MAIN_HPP *.hpp)
+
+#set_target_properties(${TARGET_NAME} PROPERTIES CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O3 -mavx2 -ffast-math")
 add_executable(${TARGET_NAME} ${MAIN_SRC} ${MAIN_HEADERS} ${MAIN_HPP})
+#set_target_properties(${TARGET_NAME} PROPERTIES CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O3 -mavx2 -ffast-math")

@@ -8,40 +8,33 @@
 #include "MainDefinitions.h"
 #include "Node.h"
 #include "FindMaxQueue.h"
+#include <cassert>
 
 namespace reid_tree {
-    template<class T>
 
+    template<class T>
     class ReidTree {
         using TNode = Node<T>;
         using pTNode = TNode *;
-        using pNode2 = std::pair<pTNode, pTNode>;
+        using pTNode2 = std::pair<pTNode, pTNode>;
     public:
         // root will start their children with this cross
-        T start_max_node_2_node_cs_level = DEFAULT_MIN_START_LEVEL;
+        T start_max_node_2_node_cs_level = .5;
         // level to level  Node::max_node_2_node_difference change
-        T step_node_2_node = DEFAULT_STEP;
+        T step_node_2_node = .05;
         // value when similarity reaches no matter to look later
-        T similarity_for_same_person = .95;
+        T similarity_for_same = .94;
         // when similarity reaches this value vector can not be stored
-        T not_to_add = 1 - step_node_2_node / 2;
+        T not_to_add = .97;
+        // threshold for queue cleaning
+        T q_clear_thr = .2;
+
         TNode *root_ = nullptr;
         Id counter = 1;
         // to check added Node length and to reserve memory
-        unsigned long default_vec_len = VEC_LEN;
+        unsigned long default_vec_len = 0;
 
         ReidTree() = default;
-
-        static T node_to_node_similarity(TNode &a, TNode &b) {
-            T xx = 0, xy = 0, yy = 0;
-            auto size1 = a.n_data_size;
-            for (int index = 0; index < size1; index++) {
-                xx += std::pow(a.n_data[index], 2.f);
-                xy += a.n_data[index] * b.n_data[index];
-                yy += std::pow(b.n_data[index], 2.f);
-            }
-            return (T) xy / ((T) std::sqrt(xx * yy) + 1e-6f);
-        }
 
         static T vec_to_node_similarity(std::vector<T> vec, TNode &b) {
             T xx = 0, xy = 0, yy = 0;
@@ -65,8 +58,8 @@ namespace reid_tree {
             return (T) xy / ((T) std::sqrt(xx * yy) + 1e-6f);
         }
 
-        // get VecParameter return 0 - if not needed to add or Node::n_id = 1 ... - if is added
-        Id add_vector(std::vector<T> data_) {
+        // get_object VecParameter return 0 - if not needed to add or Node::n_id = 1 ... - if is added
+        [[maybe_unused]] Id add_vector(std::vector<T> data_) {
             T max_child_level = start_max_node_2_node_cs_level;
             if (root_ == nullptr) {
                 root_ = new TNode(counter, data_);
@@ -116,9 +109,10 @@ namespace reid_tree {
             return 0;
         }
 
-        // get VecParameter return similarity
+        // get_object VecParameter return similarity
         T add_vector_return_cs(std::vector<T> data_) {
             T max_child_level = start_max_node_2_node_cs_level;
+            int level{1};
             T max_cs_overall;
             if (root_ == nullptr) {
                 root_ = new TNode(counter, data_);
@@ -139,6 +133,7 @@ namespace reid_tree {
                 if (cur->children.empty()) {
                     cur->children.emplace_back(counter, data_);
                     cur->children.back().max_node_2_node_difference = max_child_level;
+                    cur->children.back().level = level;
                     counter++;
                     return max_cs_overall;
                 }
@@ -147,7 +142,6 @@ namespace reid_tree {
                 int max_ix = -1;
                 for (auto i = 0; i < cur->children.size(); i++) {
                     sim = vec_to_node_similarity(data_, cur->children[i]);
-
                     // find max similarity
                     if (sim > max_cs_overall) max_cs_overall = sim;
                     // if found not_to_add - no more sense
@@ -160,11 +154,13 @@ namespace reid_tree {
                 if (max_sim < cur->max_node_2_node_difference) {
                     cur->children.emplace_back(counter, data_);
                     cur->children.back().max_node_2_node_difference = max_child_level;
+                    cur->children.back().level = level;
                     counter++;
                     return max_cs_overall;
                 } else {
                     cur = &(*cur).children[max_ix];
                     max_child_level += step_node_2_node;
+                    level += 1;
                 }
                 if (max_cs_overall > not_to_add) return max_cs_overall;
             }
@@ -183,7 +179,7 @@ namespace reid_tree {
             all_path.push_back(root_);
 #endif
             while (!q.empty()) {
-                auto *v = q.get();
+                auto *v = q.get_object();
                 if (!v->children.empty()) {
                     for (auto &c: v->children) {
                         auto cs = vec_to_node_similarity(data_, c);
@@ -192,7 +188,7 @@ namespace reid_tree {
                         all_path.push_back(&c);
                         if (res == 2) best_path.push_back(c.n_id);
 #endif
-                        if (cs > similarity_for_same_person) return cs;
+                        if (cs > similarity_for_same) return cs;
                         nodes_passed++;
                     }
                 }
@@ -215,44 +211,66 @@ namespace reid_tree {
         };
 
         T operator&(ReidTree &b) {
-            reid_tree::FindMaxQueue<pNode2, T> q(step_node_2_node * 3);
+            reid_tree::FindMaxQueue<pTNode2, T> q(q_clear_thr);
             T cs;
             int node_calculated{1};
-            cs = node_to_node_similarity(*root_, *(b.root_));
-            if (cs > similarity_for_same_person) return cs;
-            q.Push(std::make_pair(root_, b.root_), cs);
+            cs = vec_to_vec_similarity(root_->n_data, b.root_->n_data);
+//            printf("start cs:%f", cs);
+            if (cs > similarity_for_same) return 1;
+            q.Push(pTNode2(root_, b.root_), cs);
             while (!q.empty()) {
-                auto[cn1, cn2] = q.get();
-                if (cn1->children.empty() && cn2->children.empty()) {
-                    return q.max_value;
-                } else if (!cn1->children.empty() && !cn2->children.empty()) {
-                    for (auto &cd1: cn1->children)
-                        for (auto &cd2: cn2->children) {
-                            cs = node_to_node_similarity(cd1, cd2);
-                            node_calculated++;
-                            if (cs > similarity_for_same_person) return cs;
-                            pNode2 new_pair{&cd1, &cd2};
-                            q.Push(new_pair, cs);
+                pTNode2 qO = q.get_object();
+                pTNode cn1 = qO.first;
+                pTNode cn2 = qO.second;
+                // same level
+                if (cn1->level == cn2->level) {
+                    // add all children
+                    if (!cn1->children.empty() && !cn2->children.empty()) {
+                        for (auto &cd1: cn1->children)
+                            for (auto &cd2: cn2->children) {
+                                cs = vec_to_vec_similarity(cd1.n_data, cd2.n_data);
+                                if (cs > similarity_for_same) return 1;
+                                q.Push(pTNode2(&cd1, &cd2), cs);
+                            }
+                    }
+                    // add parent to child
+                    if (!cn1->children.empty())
+                        for (auto &cd1: cn1->children) {
+                            cs = vec_to_vec_similarity(cd1.n_data, cn2->n_data);
+                            if (cs > similarity_for_same) return 1;
+                            q.Push(pTNode2(cn2, &cd1), cs);
                         }
-                } else if (!cn1->children.empty()) {
-                    for (auto &cd1: cn1->children) {
-                        cs = node_to_node_similarity(cd1, *cn2);
-                        node_calculated++;
-                        if (cs > similarity_for_same_person) return cs;
-                        pNode2 new_pair{&cd1, cn2};
-                        q.Push(new_pair, cs);
-                    }
-                } else if (!cn2->children.empty()) {
-                    for (auto &cd2: cn2->children) {
-                        cs = node_to_node_similarity(*cn1, cd2);
-                        node_calculated++;
-                        if (cs > similarity_for_same_person) return cs;
-                        pNode2 new_pair{cn1, &cd2};
-                        q.Push(new_pair, cs);
-                    }
+
+                    if (!cn2->children.empty())
+                        for (auto &cd2: cn2->children) {
+                            cs = vec_to_vec_similarity(cn1->n_data, cd2.n_data);
+                            if (cs > similarity_for_same) return 1;
+                            q.Push(pTNode2(cn1, &cd2), cs);
+                        }
                 }
+                else {
+                    // compare "old" to new child
+                    if (!cn2->children.empty())
+                        for (auto &cd2: cn2->children) {
+                            cs = vec_to_vec_similarity(cn1->n_data, cd2.n_data);
+                            if (cs > similarity_for_same) return 1;
+                            q.Push(pTNode2(cn1, &cd2), cs);
+                        }
+                }
+
+
             }
             return q.max_value;
+        }
+
+        T operator&(std::vector<std::vector<T>> &b) {
+            T max_sim{0};
+            T cs;
+            for (auto &a: b) {
+                cs = nearst(a);
+                if (cs > max_sim) max_sim = cs;
+            }
+            return max_sim;
         }
 
         ~ReidTree() { delete root_; };
@@ -274,8 +292,9 @@ namespace reid_tree {
                 if (levels.find(lvl) == levels.end()) levels[lvl] = {};
                 if (!v->children.empty()) {
                     for (auto &vc: v->children) {
-                        auto cs = node_to_node_similarity(*v, vc);
-                        std::cout << "    " << v->n_id << " -- " << vc.n_id << " [label=" << cs << "]" << std::endl;
+                        auto cs = vec_to_vec_similarity(v->n_data, vc.n_data);
+                        std::cout << "    " << v->n_id << " -- " << vc.n_id << " [label=\"" << cs << "\\ll:" << v->level
+                                  << "\"]" << std::endl;
                         levels[lvl].insert(vc.n_id);
                         q.push(&vc);
                     }
@@ -304,13 +323,13 @@ namespace reid_tree {
                 std::cout << " }" << std::endl;
             }
 
-            printf("}");
+//            printf("}");
 
         };
 
-        bool empty() {return root_ == nullptr;}
+        bool empty() { return root_ == nullptr; }
 
-        int size() {return counter;}
+        int size() { return counter; }
     };
 
 }

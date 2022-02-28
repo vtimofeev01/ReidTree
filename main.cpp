@@ -1,94 +1,98 @@
 #include <iostream>
-#include <fstream>
-#include <sstream>
-#include <cassert>
-#include "ReidTree.h"
-#include "FindMaxQueue.h"
-
+#include <chrono>
+#include "ReadCSVFile.h"
+// dot -Tsvg 1.dot > svg.html
 
 int main() {
     using FT = float;
-    using ft_tree = reid_tree::ReidTree<FT>;
-    using VecParameter=std::vector<FT>;
-    using VecVecParameter = std::vector<std::vector<FT>> ;
-    ft_tree rt, rt2;
-    VecParameter test2;
-    rt.start_max_node_2_node_cs_level = .55;
-    auto counter = 0;
-    VecVecParameter main_data;
-    std::vector<double> mainVector;
-    std::ifstream data("../samples/datas_0001.csv");
-    unsigned long len = -1;
-    if (data.is_open()) {
-        std::string line;
-        int count = 0;
-        while (std::getline(data, line)) {
+    auto rt1 = reid_tree::ReadCSVFileToTree<FT>("../samples/datas_3503_0001.csv");
+//    rt1.output_DOT();
+//    exit(255);
+    auto rt2 = reid_tree::ReadCSVFileToTree<FT>("../samples/datas_5499_0001.csv");
 
-            std::istringstream ss{line};
-            std::string token;
-            VecParameter reid;
-            while (std::getline(ss, token, ',')) {
-                if (!token.empty()) {
-                    char *n_str;
-                    auto d = std::strtof(token.c_str(), &n_str);
-                    if (d == 0 && n_str == token.c_str()) printf("WHAT THE .... %s", token.c_str());
-                    reid.push_back(d);
-                }
+
+    auto begin = std::chrono::steady_clock::now();
+//    auto r = rt1 & rt2;
+    auto end = std::chrono::steady_clock::now();
+
+    auto elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
+    std::cout << "The time: " << elapsed_mks.count() << " mks\n";
+
+    FT max_cs{0};
+    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_0001.csv");
+    auto vs2 = reid_tree::ReadCSVFile<FT>("../samples/datas_5499_0001.csv");
+    begin = std::chrono::steady_clock::now();
+    for (const auto &v1: vs1)
+        for (const auto &v2: vs2) {
+            auto cs = rt1.vec_to_vec_similarity(v1, v2);
+            if (cs > max_cs) {
+                max_cs = cs;
+//                printf("max is set: %f\n", max_cs);
             }
-            if (len == -1) len = reid.size();
-            assert(len == reid.size());
-            main_data.push_back(reid);
-            if (counter % 2 == 0) rt.add_vector(reid);
-            else rt2.add_vector(reid);
-
-            counter++;
-            count++;
         }
+    end = std::chrono::steady_clock::now();
+    elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
+    std::cout << "The time: " << elapsed_mks.count() << " mks\n";
+    std::cout << "res:" << max_cs << std::endl;
 
-        data.close();
-    }
-    printf("read %zu\n", main_data.size());
+    std::vector<float> not_to_adds{ .97};
+    std::vector<float> same_similarity{.95, .94, .93};
+    std::vector<float> steps{.1, .05, .03, .01};
+    std::vector<float> clear_thresholds{.05, .3, .2, .1, .02, .01};
+    std::vector<float> start_ntn{.5,.45,  .6,};
+    printf("\n");
+    auto min_et{elapsed_mks};
+    for (auto nta: not_to_adds)
+        for (auto sp: same_similarity)
+            for (auto step: steps)
+                for (auto radius: clear_thresholds)
+                    for (auto n2n: start_ntn) {
+                        printf(".");
+                        reid_tree::ReidTree<float> tr0{};
+                        tr0.start_max_node_2_node_cs_level = n2n;
+                        tr0.step_node_2_node = step;
+                        tr0.not_to_add = nta;
+                        tr0.similarity_for_same = sp;
+                        tr0.q_clear_thr = radius;
+                        reid_tree::VecToTree<float>(tr0, vs1);
 
-
-//    std::vector<reid_tree::Similarity> ress;
-    VecParameter test{-0.066568, -0.0343255, 0.429685, 0.191537, 0.0241271, 0.148219, -0.138363, -0.0635369,
-                                 -0.485028, -0.409273, 0.346789, -0.0769717, -0.364237, -0.150487, -0.0331914,
-                                 -0.331558, -0.228503, -0.203791, 0.0284306, -0.0865402, 0.408311, -0.340878, -0.199868,
-                                 0.673801, -0.289081, 0.17251, -0.173779, -0.20317, -0.119926, 0.00899191, 0.130852,
-                                 0.136325, 0.108998, -0.155866, -0.00755034, 0.00694465, -0.271797, 0.5249, 0.100907,
-                                 -0.384007, -0.213397, 0.340807, -0.650528, 0.0493007, -0.304061, -0.0738205,
-                                 -0.0409971, 0.327299, 0.35855, 0.198889, -0.1957, -0.529276, -0.0240666, -0.543399,
-                                 0.189412, 0.233984, -0.503671, -0.239724, -0.238468, -0.439294, -0.269264, -0.0934284,
-                                 0.198071, -0.443814, -0.245673, 0.112312, -0.168167, 0.217302, -0.395743, -0.345209,
-                                 0.0181181, -0.232595, -0.325035, -0.0882559, 0.0105247, -0.786684, 0.113939, 0.0891635,
-                                 0.589176, 0.137665, 0.0726206, 0.13969, -0.15735, -0.0939559, -0.127622, -0.243386,
-                                 -0.0660145, 0.306978, 0.562015, -0.530781, -0.210117, 0.1049, -0.444505, 0.0276231,
-                                 -0.238954, -0.153481, -0.173676, 0.326736, -0.11821, 0.228372, -0.749261, -0.497824,
-                                 0.0814469, -0.382966, 0.211304, 0.228884, -0.536876, 0.329018, -0.171752, 0.144999,
-                                 0.1571, -0.0606143, -0.419931, 0.0427808, 0.0920114, 0.395452, 0.114858, 0.259322,
-                                 0.259641, -0.35012, 0.152095, 0.209156, 0.248147, 0.224719, 0.032781, -0.0286704,
-                                 0.505136, 0.103117, 0.553909, -0.141033, -0.298801, -0.455823, 0.445389, 0.036671,
-                                 -0.303494, -0.323694, 0.361779, 0.174869, -0.254401, -0.186799, 0.26209, -0.161885,
-                                 -0.469093, -0.743848, -0.463941, 0.546586, -0.307887, -0.342165, -0.0595142, -0.984188,
-                                 0.335652, -1.13688, -0.198331, -0.214653, 0.0960652, 0.304776, -0.390515, 0.080597,
-                                 0.691589, -0.392999, -0.309278, -0.204222, -0.0844667, 0.196216, 0.40475, 0.319592,
-                                 -0.399266, 0.0980914, 0.237232, -0.225316, 0.123235, -0.656459, 0.0699926, -0.446148,
-                                 0.230815, 0.13545, 0.344813, 0.00366181, -0.201104, 0.298289, -0.0465926, 0.101409,
-                                 -0.263588, -0.989845, -0.0842179, 0.311064, 0.025828, 0.159125, 0.739602, 0.208443,
-                                 -0.207361, -0.025956, -0.563653, -0.0339868, -0.218068, 0.328364, 0.472884, 0.208163,
-                                 -0.0862811, -0.270599, -0.0444692, 0.0170137, 0.0230844, -0.0708248, -0.00593386,
-                                 0.38963, 0.650335, 0.450273, -0.251653, 0.123888, -0.256906, 0.0242499, -0.360386,
-                                 -0.0619389, 0.779079, 0.244562, 0.0916892, 0.0937262, -0.470375, 0.361192, -0.137412,
-                                 -0.171153, 0.0866019, 0.0180411, 0.0517729, 0.575652, -0.192832, 0.538974, -0.0141319,
-                                 -0.34416, -0.1072, 0.468919, -0.00957524, 0.389441, 0.0542647, -0.164726, -0.513923,
-                                 -0.0189216, 0.223113, -0.088014, -0.265959, -0.0932453, -0.472296, 0.50496, -0.128372,
-                                 0.155315, -0.484559, -0.745536, -0.351254, 0.397052, 0.523452, -0.537274, 0.247419,
-                                 0.149012, -0.0676735, -0.158258};
+                        reid_tree::ReidTree<float> tr1{};
+                        tr1.start_max_node_2_node_cs_level = n2n;
+                        tr1.step_node_2_node = step;
+                        tr1.not_to_add = nta;
+                        tr1.similarity_for_same = sp;
+                        tr1.q_clear_thr = radius;
+                        reid_tree::VecToTree<float>(tr1, vs2);
 
 
-    auto r = rt & rt2;
-    std::cout << "res:" << r << std::endl;
+                        max_cs = 0;
+                        FT cs;
+                        begin = std::chrono::steady_clock::now();
 
-    auto tsz = main_data[20].size();
-    printf("best fit is: %f vec_size %lu", rt.nearst(main_data[20]), tsz);
+//                        cs = tr0 & vs2;
+                        cs = tr0 & tr1;
+                        if (cs > max_cs)
+                            max_cs = cs;
+
+                        end = std::chrono::steady_clock::now();
+                        elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
+                        if ((min_et > elapsed_mks) & (max_cs > .5))
+                        {
+                            min_et = elapsed_mks;
+                            printf("\ntree size:%lu in %li mks not_to_add:%f same:%f step:%f radius:%f cs:%f start_n2n:%f",
+                                   tr0.counter,
+                                   min_et.count(),
+                                   tr0.not_to_add,
+                                   tr0.similarity_for_same,
+                                   tr0.step_node_2_node,
+                                   tr0.q_clear_thr,
+                                   max_cs,
+                                   tr0.start_max_node_2_node_cs_level
+                            );
+                        }
+//                        exit(200);
+
+                    }
+
+    std::cout << "res:" << max_cs << std::endl;
 }

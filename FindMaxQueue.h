@@ -1,5 +1,5 @@
 #pragma once
-
+#include <cassert>
 #include <vector>
 
 namespace reid_tree {
@@ -17,7 +17,8 @@ namespace reid_tree {
 
         int Push(T_obj data, Tv score) {
             int out(1);
-            if (score > max_value) { max_value = score;
+            if (score > max_value) {
+                max_value = score;
                 out = 2;
             }
             assert(score >= -1.1 && score <= 1.1);
@@ -30,11 +31,12 @@ namespace reid_tree {
                 if (it->first < max_value - delta )  it = data_.erase(it);
                 else ++it;
             }
-            data_.template emplace_back(score, data);
+            data_.emplace_back(score, data);
+//            printf("push:%lu score=%f\n", data_.size(), score);
             return out;
         }
 
-        T_obj get() {
+        T_obj get_object() {
             auto out = data_.front();
             data_.erase(data_.begin());
             return out.second;
