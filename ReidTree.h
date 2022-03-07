@@ -55,12 +55,11 @@ namespace reid_tree {
             T max_child_level = start_max_node_2_node_cs_level;
             int level{1};
             T max_cs_overall{0};
-//            printf("vector in: \n");
             if (root_.empty()) default_vec_len = data_.size();
             else assert(data_.size() == default_vec_len);
             VecTNode *cur_node_list = &root_;
 
-            while (true) { // !cur_node_list->empty()
+            while (true) {
                 // enumerate vectors
                 if (cur_node_list->empty()) {
                     cur_node_list->emplace_back(counter++, data_);
