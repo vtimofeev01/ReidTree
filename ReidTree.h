@@ -14,10 +14,31 @@
 namespace reid_tree {
 
     template<class T>
-    T vec_to_vec_similarity(std::vector<T>& vec_a, std::vector<T>& vec_b, long length) {
+    T vec_to_vec_similarity(std::vector<T>& vec_a, std::vector<T>& vec_b, size_t length) {
         T xx = 0, xy = 0, yy = 0;
-        auto size1 = vec_a.size();
-        for (int index = 0; index < size1; index++) {
+        for (int index = 0; index < length; index++) {
+            xx += std::pow(vec_a[index], 2.f);
+            xy += vec_a[index] * vec_b[index];
+            yy += std::pow(vec_b[index], 2.f);
+        }
+        return (T) xy / ((T) std::sqrt(xx * yy) + 1e-6f);
+    }
+
+    template<class T>
+    T vec_to_vec_similarity(std::vector<T>& vec_a, T* vec_b[], size_t length) {
+        T xx = 0, xy = 0, yy = 0;
+        for (int index = 0; index < length; index++) {
+            xx += std::pow(vec_a[index], 2.f);
+            xy += vec_a[index] * vec_b[index];
+            yy += std::pow(vec_b[index], 2.f);
+        }
+        return (T) xy / ((T) std::sqrt(xx * yy) + 1e-6f);
+    }
+
+    template<class T>
+    T vec_to_vec_similarity(T* vec_a[], T* vec_b[], size_t length) {
+        T xx = 0, xy = 0, yy = 0;
+        for (int index = 0; index < length; index++) {
             xx += std::pow(vec_a[index], 2.f);
             xy += vec_a[index] * vec_b[index];
             yy += std::pow(vec_b[index], 2.f);
@@ -42,6 +63,7 @@ namespace reid_tree {
         T not_to_add = .97;
         // threshold for queue cleaning
         T q_clear_thr = .1;
+
 
         VecTNode root_;
         Id counter = 1;
@@ -71,7 +93,7 @@ namespace reid_tree {
                 T sim, max_sim = -1;
                 int max_ix = -1;
                 for (auto i = 0; i < cur_node_list->size(); i++) {
-                    sim = vec_to_vec_similarity<float>(data_, cur_node_list->at(i).n_data, data_.size());
+                    sim = vec_to_vec_similarity<float>(data_, cur_node_list->at(i).n_data, default_vec_len);
                     // find max similarity
                     if (sim > max_cs_overall) max_cs_overall = sim;
                     // if found not_to_add - no more sense
@@ -152,7 +174,7 @@ namespace reid_tree {
             if (!root_.empty() && !b.root_.empty()) {
                 for (auto &cd1: root_)
                     for (auto &cd2: b.root_) {
-                        cs = reid_tree::vec_to_vec_similarity(cd1.n_data, cd2.n_data, cd1.n_data.size());
+                        cs = reid_tree::vec_to_vec_similarity<float>(cd1.n_data, cd2.n_data, default_vec_len);
                         if (cs > similarity_for_same) return 1;
                         q.Push(pTNode2(&cd1, &cd2), cs);
                     }
@@ -168,7 +190,7 @@ namespace reid_tree {
                     if (!cn1->children.empty() && !cn2->children.empty()) {
                         for (auto &cd1: cn1->children)
                             for (auto &cd2: cn2->children) {
-                                cs = reid_tree::vec_to_vec_similarity(cd1.n_data, cd2.n_data, cd1.n_data.size());
+                                cs = reid_tree::vec_to_vec_similarity(cd1.n_data, cd2.n_data, default_vec_len);
                                 if (cs > similarity_for_same) return 1;
                                 q.Push(pTNode2(&cd1, &cd2), cs);
                             }
@@ -176,14 +198,14 @@ namespace reid_tree {
                     // add parent to child
                     if (!cn1->children.empty())
                         for (auto &cd1: cn1->children) {
-                            cs = reid_tree::vec_to_vec_similarity(cd1.n_data, cn2->n_data, cd1.n_data.size());
+                            cs = reid_tree::vec_to_vec_similarity(cd1.n_data, cn2->n_data, default_vec_len);
                             if (cs > similarity_for_same) return 1;
                             q.Push(pTNode2(cn2, &cd1), cs);
                         }
 
                     if (!cn2->children.empty())
                         for (auto &cd2: cn2->children) {
-                            cs = reid_tree::vec_to_vec_similarity(cn1->n_data, cd2.n_data, cd2.n_data.size());
+                            cs = reid_tree::vec_to_vec_similarity(cn1->n_data, cd2.n_data, default_vec_len);
                             if (cs > similarity_for_same) return 1;
                             q.Push(pTNode2(cn1, &cd2), cs);
                         }
@@ -192,7 +214,7 @@ namespace reid_tree {
                     // compare "old" to new child
                     if (!cn2->children.empty())
                         for (auto &cd2: cn2->children) {
-                            cs = reid_tree::vec_to_vec_similarity(cn1->n_data, cd2.n_data, cd2.n_data.size());
+                            cs = reid_tree::vec_to_vec_similarity(cn1->n_data, cd2.n_data, default_vec_len);
                             if (cs > similarity_for_same) return 1;
                             q.Push(pTNode2(cn1, &cd2), cs);
                         }

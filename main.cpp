@@ -24,7 +24,7 @@ int main() {
     begin = std::chrono::steady_clock::now();
     for (auto &v1: vs1)
         for (auto &v2: vs2) {
-            auto cs = reid_tree::vec_to_vec_similarity<float>(v1,v2, 0);
+            auto cs = reid_tree::vec_to_vec_similarity<float>(v1,v2, v1.size());
             if (cs > max_cs) {
                 max_cs = cs;
 //                printf("max is set: %f\n", max_cs);
@@ -94,8 +94,7 @@ int main() {
                                    tr0.step_node_2_node,
                                    tr0.q_clear_thr,
                                    cs,
-                                   tr0.start_max_node_2_node_cs_level,
-                                   max_cs
+                                   tr0.start_max_node_2_node_cs_level
                             );
                         }
 
