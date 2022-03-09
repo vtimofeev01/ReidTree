@@ -102,7 +102,7 @@ namespace reid_tree {
 
 
         // find nears value by vec/ comments - output data to insert in .DOT to see what was looked
-        T nearst(std::vector<T> data_) const {
+        [[maybe_unused]] T nearst(std::vector<T> data_) const {
             int nodes_passed = 1;
             reid_tree::FindMaxQueue<pTNode, T> q(step_node_2_node * 2);
             q.Push(root_, vec_to_vec_similarity(data_, root_->n_data));

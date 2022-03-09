@@ -50,7 +50,7 @@ namespace reid_tree{
     }
 
     template<class T>
-    ReidTree<T>ReadCSVFileToTree(const std::string& fn) {
+    [[maybe_unused]] ReidTree<T>ReadCSVFileToTree(const std::string& fn) {
         ReidTree<T> out;
         out.similarity_for_same = .94;
         out.not_to_add = .95;

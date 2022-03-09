@@ -94,8 +94,7 @@ int main() {
                                    tr0.step_node_2_node,
                                    tr0.q_clear_thr,
                                    cs,
-                                   tr0.start_max_node_2_node_cs_level,
-                                   max_cs
+                                   tr0.start_max_node_2_node_cs_level
                             );
                         }
 
