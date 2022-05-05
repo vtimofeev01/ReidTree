@@ -1,6 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include "ReadCSVFile.h"
+#include "ReidTree.h"
 // dot -Tsvg 1.dot > svg.html
 
 int main() {
@@ -24,7 +25,7 @@ int main() {
     begin = std::chrono::steady_clock::now();
     for (auto &v1: vs1)
         for (auto &v2: vs2) {
-            auto cs = reid_tree::vec_to_vec_similarity<float>(v1,v2, 0);
+            auto cs = reid_tree::vec_to_vec_similarity<float>(v1,v2);
             if (cs > max_cs) {
                 max_cs = cs;
 //                printf("max is set: %f\n", max_cs);
@@ -37,36 +38,24 @@ int main() {
 
     std::vector<float> not_to_adds{ .97};
     std::vector<float> same_similarity{.94};
-    std::vector<float> steps{.01, .03, .1, .05};
-    std::vector<float> clear_thresholds{.1, .05, .3, .2,  .02, .01};
-    std::vector<float> start_ntn{.6,.45,.4, .5,  };
+    std::vector<int> leaf_size{2, 3, 4, 5};
+
     printf("\n");
-    reid_tree::ReidTree<float> tr0{};
-    reid_tree::ReidTree<float> tr1{};
+    auto tr0 = std::make_shared<reid_tree::ReidTree<float>>();
+    auto tr1 = std::make_shared<reid_tree::ReidTree<float>>();
     auto min_et{elapsed_mks};
     max_cs = 0;
     for (auto nta: not_to_adds)
         for (auto sp: same_similarity)
-            for (auto step: steps)
-                for (auto radius: clear_thresholds)
-                    for (auto n2n: start_ntn) {
+            for (auto ls: leaf_size) {
 //                        printf(".\n");
-                        tr0.clear();
-                        tr1.clear();
-
-                        tr0.start_max_node_2_node_cs_level = n2n;
-                        tr0.step_node_2_node = step;
-                        tr0.not_to_add = nta;
-                        tr0.similarity_for_same = sp;
-                        tr0.q_clear_thr = radius;
+                        tr0->clear();
+                        tr1->clear();
+                        tr0->not_to_add = nta;
+                        tr0->similarity_for_same = sp;
                         reid_tree::VecToTree<float>(tr0, vs1);
-
-
-                        tr1.start_max_node_2_node_cs_level = n2n;
-                        tr1.step_node_2_node = step;
-                        tr1.not_to_add = nta;
-                        tr1.similarity_for_same = sp;
-                        tr1.q_clear_thr = radius;
+                        tr1->not_to_add = nta;
+                        tr1->similarity_for_same = sp;
                         reid_tree::VecToTree<float>(tr1, vs2);
 
 
@@ -86,15 +75,12 @@ int main() {
 //                        if (condition)
                         {
                             min_et = elapsed_mks;
-                            printf("dict(tree_size=%lu,  time=%li,  not_to_add=%f, same=%f, step=%f, radius=%f, cs=%f, start_n2n=%f),\n",
-                                   tr0.counter,
+                            printf("dict(tree_size=%lu,  time=%li,  not_to_add=%f, same=%f, cs=%f),\n",
+                                   tr0->counter,
                                    min_et.count(),
-                                   tr0.not_to_add,
-                                   tr0.similarity_for_same,
-                                   tr0.step_node_2_node,
-                                   tr0.q_clear_thr,
-                                   cs,
-                                   tr0.start_max_node_2_node_cs_level
+                                   tr0->not_to_add,
+                                   tr0->similarity_for_same,
+                                   cs
                             );
                         }
 

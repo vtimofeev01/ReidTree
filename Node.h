@@ -5,16 +5,18 @@
 namespace reid_tree {
     template <typename T>
     class Node {
+//        using TNode = Node<T>;
+//        using pTNode = std::shared_ptr<TNode>;
+//        using MapPTNode = std::map<int, pTNode>;
+//        using TData =  std::vector<T>;
+//        using pairInt = std::pair<int, int>;
+//        using mapPairInt = std::map<pairInt, float>;
     public:
-        Id n_id = 0;
-        // if cross thr is less than this value - add to children, else - go to nearst child
-        T max_node_2_node_difference = .5;
+        Id n_id;
         std::vector<T> n_data;
-        int n_data_size;
-        int level{0};
-        std::vector<Node> children;
-
-        Node(Id id_, std::vector<T>& data_): n_id(id_), n_data(data_), n_data_size(data_.size()) {}
+        std::map<int, std::shared_ptr<Node<T>>> children;
+        std::map< std::pair<int, int>, float> cross_cost;
+        Node(Id id_, std::vector<T>& data_): n_id(id_), n_data(data_) {}
         ~Node()= default;
     };
 }
