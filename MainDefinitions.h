@@ -4,5 +4,5 @@
 //#define RT_OUTPUT_DOT_DATA
 
 namespace reid_tree{
-typedef unsigned long Id;
+typedef int Id;
 }

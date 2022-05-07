@@ -15,8 +15,7 @@ namespace reid_tree {
         Id n_id;
         std::vector<T> n_data;
         std::map<int, std::shared_ptr<Node<T>>> children;
-        std::map< std::pair<int, int>, float> cross_cost;
-        Node(Id id_, std::vector<T>& data_): n_id(id_), n_data(data_) {}
+        Node(Id id_, const std::vector<T>& data_): n_id(id_), n_data(data_) {}
         ~Node()= default;
     };
 }

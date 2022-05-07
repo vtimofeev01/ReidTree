@@ -46,9 +46,11 @@ namespace reid_tree{
     }
 
     template<class T>
-    void VecToTree(std::shared_ptr<ReidTree<T>> &tree, std::vector<std::vector<T>> &vs){
+    int VecToTree(std::shared_ptr<ReidTree<T>> &tree, std::vector<std::vector<T>> &vs){
+        int out{0};
         for (auto &v: vs)
-            tree->add_vector(v);
+            out += tree->add_vector(v);
+        return out;
     }
 
     template<class T>
