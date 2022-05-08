@@ -1,20 +1,20 @@
 #pragma once
-
-#include "MainDefinitions.h"
+#include <memory>
 
 namespace reid_tree {
-    template <typename T>
+    template <typename T, typename TKey>
     class Node {
     public:
-        Id n_id = 0;
-        // if cross thr is less than this value - add to children, else - go to nearst child
-        T max_node_2_node_difference = .5;
-        std::vector<T> n_data;
-        int n_data_size;
-        int level{0};
-        std::vector<Node> children;
+        T min_lvl;
+        T max_lvl;
+        TKey n_id;
+        TKey lvl;
 
-        Node(Id id_, std::vector<T>& data_): n_id(id_), n_data(data_), n_data_size(data_.size()) {}
+        std::shared_ptr<Node<T, TKey>> parent;
+        std::vector<T> n_data;
+        std::map<int, std::shared_ptr<Node<T, TKey>>> children;
+        Node(TKey id_, const std::vector<T>& data_): n_id(id_), n_data(data_), min_lvl(2), max_lvl(-2), lvl(0), parent(
+                nullptr), children() {}
         ~Node()= default;
     };
 }
