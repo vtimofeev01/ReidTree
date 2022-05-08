@@ -36,7 +36,7 @@ namespace reid_tree {
     public:
         T similarity_for_same = .94;
         // when similarity reaches this value vector can not be stored
-        T not_to_add = .97;
+        T not_to_add = .99;
         // threshold for queue cleaning
 
         pTNode root_ = nullptr;
@@ -352,15 +352,11 @@ namespace reid_tree {
 
         };
 
-        bool empty() { return root_ == nullptr; }
-
-        int size() { return counter; }
-
         void clear() {
             if (root_ == nullptr) return;
             root_->children.clear();
             root_ = nullptr;
-            counter = 1;
+            counter = 0;
         }
     };
 
