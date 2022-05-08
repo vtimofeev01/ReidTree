@@ -212,13 +212,6 @@ namespace reid_tree {
             return q.max_value;
 
         };
-
-        // got [1 1] similarity: 0.000000   calculated:0
-        //  [19 15] max sim:0.402037 sim:0.402037 > min_lvl 0.543715 0.585259 both with children added
-        //[19 15] max sim:0.402037 sim:0.402037 > min_lvl 0.543715 0.585259 both with children added
-//        [19 7] max sim:0.437864 sim:0.432810 > min_lvl 0.543715 0.981039 both with children added
-//        [18 8] max sim:0.448734 sim:0.448734 > min_lvl 0.708984 0.000000
-
         T to_tree(std::shared_ptr<ReidTree> b) {
             // fill with roots
             if (root_ == nullptr || b->root_ == nullptr || root_->children.empty() || b->root_->children.empty())
@@ -322,9 +315,7 @@ namespace reid_tree {
             return max_similarity;
 //            return q.max_value;
         }
-
         ~ReidTree() { root_->children.clear(); };
-
         // outputs to screen tree code in dot format for later look
         [[maybe_unused]] void output_DOT() const {
 
@@ -351,10 +342,6 @@ namespace reid_tree {
 
 
         };
-
-        bool empty() { return root_ == nullptr; }
-
-        int size() { return counter; }
 
         void clear() {
             if (root_ == nullptr) return;

@@ -70,20 +70,11 @@ int main() {
 
                 FT cs;
                 begin = std::chrono::steady_clock::now();
-
-//                        cs = tr0 & vs2;
                 cs = tr0->to_tree(tr1);
 
                 end = std::chrono::steady_clock::now();
                 elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
                 prep_mks = std::chrono::duration_cast<std::chrono::microseconds>(begin - begin_prep);
-//                auto condition = (cs >= max_cs);
-//                        auto condition = (min_et >= elapsed_mks) & (cs >= max_cs);
-//                if (cs > max_cs)
-//                    max_cs = cs;
-////                        if (condition)
-//                {
-//                    min_et = elapsed_mks;
                 auto r = 6 * prep_mks.count() + 9 * elapsed_mks.count();
                 printf("dict(tree_size=%i/%i,  prepare=%li time=%li,  total=%li, not_to_add=%f, same=%f, leaf=%i, cs=%f),\n",
                        tree_size_1, tree_size_2,
@@ -97,9 +88,9 @@ int main() {
                 );
                 if (r < min_et) min_et = r;
 //                }
-                    tr0->output_DOT();
+//                    tr0->output_DOT();
 //                    tr1->output_DOT();
-                        exit(200);
+//                        exit(200);
 
             }
 
