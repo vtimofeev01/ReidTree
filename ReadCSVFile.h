@@ -39,23 +39,23 @@ namespace reid_tree{
         return out;
     }
 
-    template<class T>
-    void VecToTree(ReidTree<T> &tree, std::vector<std::vector<T>> &vs){
+    template<class T, class T_key>
+    void VecToTree(ReidTree<T, T_key> &tree, std::vector<std::vector<T>> &vs){
         for (auto &v: vs)
             tree.add_vector(v);
     }
 
-    template<class T>
-    int VecToTree(std::shared_ptr<ReidTree<T>> &tree, std::vector<std::vector<T>> &vs){
+    template<class T, class T_key>
+    int VecToTree(std::shared_ptr<ReidTree<T, T_key>> &tree, std::vector<std::vector<T>> &vs){
         int out{0};
         for (auto &v: vs)
             out += tree->add_vector(v);
         return out;
     }
 
-    template<class T>
-    [[maybe_unused]] ReidTree<T>ReadCSVFileToTree(const std::string& fn) {
-        ReidTree<T> out;
+    template<class T, class T_key>
+    [[maybe_unused]] ReidTree<T, T_key>ReadCSVFileToTree(const std::string& fn) {
+        ReidTree<T, T_key> out;
         out.similarity_for_same = .94;
         out.not_to_add = .95;
         out.step_node_2_node = .03;

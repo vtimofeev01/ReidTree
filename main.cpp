@@ -6,15 +6,9 @@
 
 int main() {
     using FT = float;
-//    auto rt1 = reid_tree::ReadCSVFileToTree<FT>("../samples/datas_3503_0001.csv");
-//    rt1.output_DOT();
-//    exit(255);
-//    auto rt2 = reid_tree::ReadCSVFileToTree<FT>("../samples/datas_5499_0001.csv");
-
 
     auto begin = std::chrono::steady_clock::now();
     auto begin_prep = std::chrono::steady_clock::now();
-//    auto r = rt1 & rt2;
     auto end = std::chrono::steady_clock::now();
 
     auto prep_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
@@ -23,7 +17,10 @@ int main() {
 
     FT max_cs{0};
     auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_00020.1.csv");
+//    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_0001.csv");
+//    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_5499_0001.csv");
     auto vs2 = reid_tree::ReadCSVFile<FT>("../samples/datas_00020.1.csv");
+//    auto vs2 = reid_tree::ReadCSVFile<FT>("../samples/datas_5499_0002.csv");
     begin = std::chrono::steady_clock::now();
     int cnt{0};
     for (auto &v1: vs1)
@@ -40,40 +37,42 @@ int main() {
     std::cout << "Total cs calcs:" << cnt << " time: " << elapsed_mks.count() << " mks ";
     std::cout << "res:" << max_cs << std::endl;
 
-    std::vector<float> not_to_adds{.97, .99, 1.1};
-    std::vector<float> same_similarity{.9, .94};
-    std::vector<int> leaf_size{8, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    std::vector<float> not_to_adds{ .99, 1.1};
+    std::vector<float> same_similarity{.9};
+    std::vector<int> leaf_size{ 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13};
 
     printf("\n");
 
-    auto min_et{elapsed_mks};
+    auto min_et{100000000000};
     max_cs = 0;
     for (auto nta: not_to_adds)
         for (auto sp: same_similarity)
             for (auto ls: leaf_size) {
 //                        printf(".\n");
                 begin_prep = std::chrono::steady_clock::now();
-                auto tr0 = std::make_shared<reid_tree::ReidTree<float>>();
-                auto tr1 = std::make_shared<reid_tree::ReidTree<float>>();
+                auto tr0 = std::make_shared<reid_tree::ReidTree<float, int>>();
+                auto tr1 = std::make_shared<reid_tree::ReidTree<float, int>>();
 
                 tr0->clear();
                 tr1->clear();
                 tr0->not_to_add = nta;
                 tr0->similarity_for_same = sp;
                 tr0->max_node_size = ls;
-                auto tree_size_1 = reid_tree::VecToTree<float>(tr0, vs1);
+                auto tree_size_1 = reid_tree::VecToTree<float, int>(tr0, vs1);
+                tr0->pre_compare();
 
                 tr1->not_to_add = nta;
                 tr1->similarity_for_same = sp;
                 tr1->max_node_size = ls;
-                auto tree_size_2 = reid_tree::VecToTree<float>(tr1, vs2);
+                auto tree_size_2 = reid_tree::VecToTree<float, int>(tr1, vs2);
+                tr1->pre_compare();
 
 
                 FT cs;
                 begin = std::chrono::steady_clock::now();
 
 //                        cs = tr0 & vs2;
-                cs = tr0->compare_to_tree(tr1);
+                cs = tr0->to_tree(tr1);
 
                 end = std::chrono::steady_clock::now();
                 elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
@@ -85,20 +84,24 @@ int main() {
 ////                        if (condition)
 //                {
 //                    min_et = elapsed_mks;
-                    printf("dict(tree_size=%i/%i,  prepare=%li time=%li,  not_to_add=%f, same=%f, leaf=%i, cs=%f),\n",
-                           tree_size_1, tree_size_2,
-                           prep_mks.count(),
-                           elapsed_mks.count(),
-                           tr0->not_to_add,
-                           tr0->similarity_for_same,
-                           ls,
-                           cs
-                    );
+                auto r = 6 * prep_mks.count() + 9 * elapsed_mks.count();
+                printf("dict(tree_size=%i/%i,  prepare=%li time=%li,  total=%li, not_to_add=%f, same=%f, leaf=%i, cs=%f),\n",
+                       tree_size_1, tree_size_2,
+                       prep_mks.count(),
+                       elapsed_mks.count(),
+                       r,
+                       tr0->not_to_add,
+                       tr0->similarity_for_same,
+                       ls,
+                       cs
+                );
+                if (r < min_et) min_et = r;
 //                }
-//                    tr0->output_DOT();
-//                        exit(200);
+                    tr0->output_DOT();
+//                    tr1->output_DOT();
+                        exit(200);
 
             }
 
-    std::cout << "res:" << max_cs << std::endl;
+    std::cout << "min time:" << min_et << std::endl;
 }
