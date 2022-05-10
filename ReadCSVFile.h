@@ -42,14 +42,14 @@ namespace reid_tree{
     template<class T, class T_key>
     void VecToTree(ReidTree<T, T_key> &tree, std::vector<std::vector<T>> &vs){
         for (auto &v: vs)
-            tree.add_vector(v);
+            tree.add_idents_to_tree(v);
     }
 
     template<class T, class T_key>
     int VecToTree(std::shared_ptr<ReidTree<T, T_key>> &tree, std::vector<std::vector<T>> &vs){
         int out{0};
         for (auto &v: vs)
-            out += tree->add_vector(v);
+            out += tree->add_idents_to_tree(v);
         return out;
     }
 
