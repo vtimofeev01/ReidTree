@@ -18,27 +18,6 @@ namespace reid_tree {
         ~Node()= default;
     };
 
-    template <typename T, typename TKey>
-    class BNode {
-    public:
-        T cross_sim;
-        TKey id;
-        TKey level;
-        std::vector<T> data;
-        std::shared_ptr<BNode<T, TKey>> parent;
-        std::shared_ptr<BNode<T, TKey>> left;
-        std::shared_ptr<BNode<T, TKey>> right;
-        BNode(TKey _id,  const std::vector<T>& _data): id(_id), data(_data), cross_sim(0),
-        parent(nullptr), left(nullptr), right(nullptr){};
-        void clear(){
-            parent = nullptr;
-            left->clear();
-            left = nullptr;
-            right->clear();
-            right = nullptr;
-        }
-        bool isNode() {return (left != nullptr) || (right != nullptr);}
 
-    };
 
 }
