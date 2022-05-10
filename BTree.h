@@ -37,9 +37,9 @@ namespace reid_tree{
         bool isNode() {return (left != nullptr) || (right != nullptr);}
     };
 
-    template<class T, class TUID, class T_key = int>
+    template<class T, class TUID, class T_key = int, class TreeNode = BNode<T, T_key, TUID>>
     class BTree {
-        using TBNode = BNode<T, T_key, TUID>;
+        using TBNode = TreeNode;
         using pTBNode = std::shared_ptr<TBNode>;
         using pTBNode2 = std::pair<pTBNode, pTBNode>;
         using queuePairElement = std::pair<pTBNode2, T>;
@@ -57,16 +57,6 @@ namespace reid_tree{
 
         T Node2NodeCompare(const pTBNode&  n1, const pTBNode&  n2){
             return vec_to_vec_similarity(n1->data, n2->data);
-            auto ix = std::make_pair(n1->id, n2->id);
-            printf(" Node2NodeCompare<%i %i>", n1->id, n2->id);
-            if (cross_cost.find(ix) == cross_cost.end()) {
-                auto cs = vec_to_vec_similarity(n1->data, n2->data);
-                cross_cost[ix] = cs;
-                printf(" new:%f", cs);
-                return cs;
-            }
-            printf(" old:%f", cross_cost[ix]);
-            return cross_cost[ix];
         }
 
         T Node2NodeCompareCached(const pTBNode&  n1, const pTBNode&  n2, mapPairTKeyT& cache){
@@ -76,7 +66,6 @@ namespace reid_tree{
                 cache[ix] = cs;
                 return cs;
             }
-            printf(".");
             return cache[ix];
         }
 
@@ -112,12 +101,12 @@ namespace reid_tree{
                     pointer->left = insert_node;
                     pointer->cross_sim = 0;
                     add_btree_vector_log("   added Node[%i] to Node[%i] as left \n", insert_node->id, pointer->id);
-                    return 1;
+                    return counter;
                 } else if (pointer->right == nullptr) {
                     pointer->right = insert_node;
                     pointer->cross_sim = Node2NodeCompare(pointer->right, insert_node);
                     add_btree_vector_log("   added Node[%i] to Node[%i] as right with cross_sim: %f\n", insert_node->id, pointer->id, pointer->cross_sim);
-                    return 1;
+                    return counter;
                 }
                 // push up selected
                 new_to_left_cs = Node2NodeCompare(pointer->left, insert_node);
@@ -164,11 +153,11 @@ namespace reid_tree{
                     continue;
                 }
             }
-            return 1;
+            return counter;
         }
 
         // get_object VecParameter return similarity
-        int add_idents_to_tree_cached(TUID uid, std::vector<T> &data_, bool use_max_pass = true) {
+        [[maybe_unused]] int add_idents_to_tree_cached(TUID uid, std::vector<T> &data_, bool use_max_pass = true) {
             if (root_ == nullptr) {
                 default_vec_len = data_.size();
                 root_ = std::make_shared<TBNode>(++counter, 0, std::vector<T>{});
@@ -422,5 +411,57 @@ namespace reid_tree{
             }
         };
     };
+
+    template<typename T, typename TUID, typename T_key = int>
+    class IdentsBBase {
+        using Ident = std::vector<T>;
+        using upIdent = std::unique_ptr<Ident>;
+        using Idents = std::deque<upIdent>;
+        using BTreeTUID = reid_tree::BTree<T, TUID, T_key>;
+        using spBTree =  std::shared_ptr<BTreeTUID>;
+        using spIdentsBBase =  std::shared_ptr<IdentsBBase<T,TUID, T_key>>;
+    private:
+        bool changed;
+        unsigned long ident_size;
+    public:
+        int max_store_idents;
+        int erase_store_dents_per_time;
+        Idents idents;
+        spBTree indexed_data;
+
+        explicit IdentsBBase(int idents_count = 20) : changed(true), erase_store_dents_per_time(5),
+        max_store_idents(idents_count + 5), ident_size(0) {
+            indexed_data = std::make_shared<BTreeTUID>();
+        }
+
+        void add_ident(Ident in_data) {
+            idents.push_back(std::make_unique<Ident>(in_data));
+            if (idents.size() > max_store_idents) {
+                for (int i = 0; i < erase_store_dents_per_time; i++)
+                    idents.pop_front();
+                changed = true;
+            }
+            else indexed_data->add_idents_to_tree(0, in_data);
+        }
+
+        T get_best_match(spIdentsBBase &idents_base2) {
+            if (changed) {
+                changed = false;
+                indexed_data->clear();
+                for (auto &it: idents) indexed_data->add_idents_to_tree(0, *it);
+                indexed_data->pre_compare();
+            }
+
+            if (idents_base2->changed) {
+                idents_base2->changed = false;
+                idents_base2->indexed_data->clear();
+                for (auto &it: idents_base2->idents) idents_base2->indexed_data->add_idents_to_tree(0, *it);
+                idents_base2->indexed_data->pre_compare();
+            }
+            return indexed_data->to_tree(idents_base2->indexed_data);
+        }
+
+    };
+
 
 }
