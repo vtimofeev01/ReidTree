@@ -22,8 +22,8 @@ int main() {
     std::cout << "The time: " << elapsed_mks.count() << " mks\n";
 
     FT max_cs{0};
-    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_00020.1.csv");
-//    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_0001.csv");
+//    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_00020.1.csv");
+    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_0001.csv");
 //    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_5499_0001.csv");
     auto vs2 = reid_tree::ReadCSVFile<FT>("../samples/datas_00020.1.csv");
 //    auto vs2 = reid_tree::ReadCSVFile<FT>("../samples/datas_5499_0002.csv");
@@ -108,19 +108,19 @@ int main() {
 
                 begin = std::chrono::steady_clock::now();
                 bt0->clear();
-                bt0->not_to_add = .99;
+//                bt0->not_to_add = .99;
                 for (auto v: vs1) bt0->add_idents_to_tree_cached(0, v);
                 bt0->pre_compare();
                 bt1->clear();
-                bt1->not_to_add = .99;
+//                bt1->not_to_add = .99;
                 for (auto v: vs2) bt1->add_idents_to_tree_cached(0, v);
                 bt1->pre_compare();
                 end = std::chrono::steady_clock::now();
                 elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
-                printf("    BT .99 build: %lu", elapsed_mks.count());
+                printf("    C .99 build: %lu", elapsed_mks.count());
 
                 begin = std::chrono::steady_clock::now();
-                cs = bt0->to_tree_cached(bt1);
+                cs = bt0->to_tree(bt1);
                 end = std::chrono::steady_clock::now();
                 elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
                 printf(" exec: %lu cd:%f", elapsed_mks.count(), cs);
