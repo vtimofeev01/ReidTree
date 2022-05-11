@@ -17,12 +17,14 @@ namespace reid_tree{
         TKey id;
         TKey level;
         TUID uid;
+        bool mark_deleted;
         std::vector<T> data;
         std::shared_ptr<BNode<T, TKey, TUID>> parent;
         std::shared_ptr<BNode<T, TKey, TUID>> left;
         std::shared_ptr<BNode<T, TKey, TUID>> right;
         BNode(TKey _id, TUID uid_, const std::vector<T>& _data): id(_id), uid(uid_), data(_data), cross_sim(1),
-                                                       parent(nullptr), left(nullptr), right(nullptr){};
+                                                       parent(nullptr), left(nullptr), right(nullptr),
+                                                       mark_deleted(false) {};
         void clear(){
             parent = nullptr;
             if (left != nullptr) {
@@ -36,6 +38,14 @@ namespace reid_tree{
         }
         bool isNode() {return (left != nullptr) || (right != nullptr);}
     };
+
+    template <typename T, typename TKey, typename TUID>
+    struct response_t2t {
+        std::shared_ptr<BNode<T, TKey, TUID>> node1;
+        std::shared_ptr<BNode<T, TKey, TUID>> node2;
+        T similarity;
+    };
+
 
     template<class T, class TUID, class T_key = int, class TreeNode = BNode<T, T_key, TUID>>
     class BTree {
@@ -270,17 +280,18 @@ namespace reid_tree{
         sim = Node2NodeCompare(cur1, cur2); \
         ++node_calculated;                  \
         btree_comp_log(" nodes:%i sim:%f max_sim: %f", node_calculated, sim, max_similarity);         \
-        if (sim > max_similarity) max_similarity = sim; \
-        if (sim > similarity_for_same) return 2; \
+        if (sim > out.similarity) {out.similarity = sim; out.node1 = cur1; out.node2 = cur2;} \
+        if (sim > similarity_for_same) return out; \
         if (sim > parent_limit && cur1->isNode() && cur2->isNode()) {p_queue.push(std::make_pair(std::make_pair(cur1, cur2), sim)); \
         btree_comp_log(" +[%i %i] parent_limit: %f", cur1->id, cur2->id, parent_limit);         \
         }
 
 //        btree_comp_log("   max sim:%f ")
-        T to_tree(std::shared_ptr<BTree> b) {
+        response_t2t<T, T_key, TUID> to_tree(std::shared_ptr<BTree> b) {
+            response_t2t<T, T_key, TUID> out;
             T similarity_for_same=.95;
             // fill with roots
-            if (root_ == nullptr || b->root_ == nullptr) return (T) -2;
+            if (root_ == nullptr || b->root_ == nullptr) return out;
             auto q_sort = [](const queuePairElement &a, const queuePairElement &b) { return a.second < b.second; };
             std::priority_queue<queuePairElement, std::vector<queuePairElement>, decltype(q_sort)> p_queue(q_sort);
             T max_similarity{0};
@@ -376,7 +387,7 @@ namespace reid_tree{
             }
 
             btree_comp_log("nodes:%i\n", node_calculated, p_queue.size());
-            return max_similarity;
+            return out;
         }
 
         [[maybe_unused]] void output_DOT() const {
@@ -444,7 +455,7 @@ namespace reid_tree{
             else indexed_data->add_idents_to_tree(0, in_data);
         }
 
-        T get_best_match(spIdentsBBase &idents_base2) {
+        response_t2t<T, T_key, TUID> get_best_match(spIdentsBBase &idents_base2) {
             if (changed) {
                 changed = false;
                 indexed_data->clear();

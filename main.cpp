@@ -103,7 +103,7 @@ int main() {
                     printf(" BT build: %lu", elapsed_mks.count());
 
                     begin = std::chrono::steady_clock::now();
-                    cs = bt0->to_tree(bt1);
+                    cs = bt0->to_tree(bt1).similarity;
                     end = std::chrono::steady_clock::now();
                     elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
                     printf(" exec: %lu cd:%f", elapsed_mks.count(), cs);
@@ -124,7 +124,7 @@ int main() {
                     printf("    C .99 build: %lu", elapsed_mks.count());
 
                     begin = std::chrono::steady_clock::now();
-                    cs = bt0->to_tree(bt1);
+                    cs = bt0->to_tree(bt1).similarity;
                     end = std::chrono::steady_clock::now();
                     elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
                     printf(" exec: %lu cd:%f", elapsed_mks.count(), cs);
@@ -156,7 +156,7 @@ int main() {
         end2 = std::chrono::steady_clock::now();
 //        prep_mks = std::chrono::duration_cast<std::chrono::microseconds>(begin - begin_prep);
         elapsed_mks2 = std::chrono::duration_cast<std::chrono::microseconds>(end2 - end);
-        printf("cs: %f %f prep %lu %lu after build %lu\n", cs1, cs2, prep_mks0.count(), elapsed_mks.count(),
+        printf("cs: %f %f prep %lu %lu after build %lu\n", cs1.similarity, cs2.similarity, prep_mks0.count(), elapsed_mks.count(),
                elapsed_mks2.count());
 
     }
