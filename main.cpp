@@ -23,8 +23,8 @@ int main() {
     std::cout << "The time: " << elapsed_mks.count() << " mks\n";
 
     FT max_cs{0};
-//    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_00020.1.csv");
-    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_0001.csv");
+    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_00020.1.csv");
+//    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_0001.csv");
 //    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_5499_0001.csv");
     auto vs2 = reid_tree::ReadCSVFile<FT>("../samples/datas_00020.1.csv");
 //    auto vs2 = reid_tree::ReadCSVFile<FT>("../samples/datas_5499_0002.csv");
@@ -89,33 +89,32 @@ int main() {
                     bt0->clear();
                     bt0->not_to_add = 1.99;
                     for (auto v: vs1) bt0->add_idents_to_tree(0, v);
-//                bt0->output_DOT();
-//                exit(100);
-                    bt0->pre_compare();
-//                bt0->output_DOT();
-//                exit(111);
+                    exit(121);
+
                     bt1->clear();
                     bt1->not_to_add = 1.99;
                     for (auto v: vs2) bt1->add_idents_to_tree(0, v);
                     bt1->pre_compare();
+
                     end = std::chrono::steady_clock::now();
                     elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
                     printf(" BT build: %lu", elapsed_mks.count());
-
+                    bt1->output_DOT();
+                    exit(111);
                     begin = std::chrono::steady_clock::now();
-                    cs = bt0->to_tree(bt1).similarity;
+                    cs = (bt0->to_tree(bt1)).similarity;
                     end = std::chrono::steady_clock::now();
                     elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
                     printf(" exec: %lu cd:%f", elapsed_mks.count(), cs);
 
                     begin = std::chrono::steady_clock::now();
                     bt0->clear();
-                    bt0->not_to_add = .99;
+                    bt0->not_to_add = 1.99;
 //                for (auto v: vs1) bt0->add_idents_to_tree_cached(0, v);
                     for (auto v: vs1) bt0->add_idents_to_tree(0, v);
                     bt0->pre_compare();
                     bt1->clear();
-                    bt1->not_to_add = .99;
+                    bt1->not_to_add = 1.99;
 //                for (auto v: vs2) bt1->add_idents_to_tree_cached(0, v);
                     for (auto v: vs2) bt1->add_idents_to_tree(0, v);
                     bt1->pre_compare();
@@ -133,11 +132,11 @@ int main() {
                 }
     }
 //    exit(200);
-    auto b1 = std::make_shared<reid_tree::IdentsBBase<float, int>>(20);
-    auto b2 = std::make_shared<reid_tree::IdentsBBase<float, int>>(20);
+    auto b1 = std::make_shared<reid_tree::IdentsBBase<float, int>>(1000);
+    auto b2 = std::make_shared<reid_tree::IdentsBBase<float, int>>(2000);
 //    reid_tree::IdentsBase<float, int> b2(20);
 //    exit(100);
-    for (auto i = 0; i < 1000; i++) {
+    for (auto i = 0; i < 3; i++) {
 
         struct rusage usage{};
         getrusage(RUSAGE_SELF, &usage);
