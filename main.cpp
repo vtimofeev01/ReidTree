@@ -23,26 +23,33 @@ int main() {
     std::cout << "The time: " << elapsed_mks.count() << " mks\n";
 
     FT max_cs{0};
-    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_00020.1.csv");
-//    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_0001.csv");
+//    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_00020.1.csv");
+    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_0001.csv");
 //    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_5499_0001.csv");
     auto vs2 = reid_tree::ReadCSVFile<FT>("../samples/datas_00020.1.csv");
 //    auto vs2 = reid_tree::ReadCSVFile<FT>("../samples/datas_5499_0002.csv");
     begin = std::chrono::steady_clock::now();
     int cnt{0};
-    for (auto &v1: vs1)
+    int ix1(0), ix2(0), res1(0), res2(0);
+    for (auto &v1: vs1) {
+        ix2 = 0;
         for (auto &v2: vs2) {
             auto cs = reid_tree::vec_to_vec_similarity<float>(v1, v2);
             ++cnt;
             if (cs > max_cs) {
                 max_cs = cs;
-//                printf("max is set: %f\n", max_cs);
+                res1 = ix1;
+                res2 = ix2;
+//                printf("max is set: %f %i %i\n", max_cs, ix1, ix2);
             }
+            ix2++;
         }
+        ix1++;
+    }
     end = std::chrono::steady_clock::now();
     elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
     std::cout << "Total cs calcs:" << cnt << " time: " << elapsed_mks.count() << " mks ";
-    std::cout << "res:" << max_cs << std::endl;
+    std::cout << "res:" << max_cs << " ix1:" << res1 << " ix2:" << res2 << std::endl;
 
     std::vector<float> not_to_adds{.99, 1.1};
     std::vector<float> same_similarity{.9};
@@ -60,9 +67,11 @@ int main() {
             for (auto sp: same_similarity)
                 for (auto ls: leaf_size) {
 
-                    begin = std::chrono::steady_clock::now();
+
                     auto tr0 = std::make_shared<reid_tree::ReidTree<float, int, reid_tree::Node<float, int>>>();
                     auto tr1 = std::make_shared<reid_tree::ReidTree<float, int, reid_tree::Node<float, int>>>();
+
+                    begin = std::chrono::steady_clock::now();
                     tr0->clear();
                     tr1->clear();
                     tr0->not_to_add = nta;
@@ -77,66 +86,80 @@ int main() {
                     end = std::chrono::steady_clock::now();
                     elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
                     printf(" leaf tree build: %lu", elapsed_mks.count());
-
+                    int calcs{0};
                     FT cs;
+
+//
                     begin = std::chrono::steady_clock::now();
                     cs = tr0->to_tree(tr1, sp);
                     end = std::chrono::steady_clock::now();
                     elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
                     printf(" exec: %lu cd:%f", elapsed_mks.count(), cs);
-
+//
+//
                     begin = std::chrono::steady_clock::now();
                     bt0->clear();
-                    bt0->not_to_add = 1.99;
-                    for (auto v: vs1) bt0->add_idents_to_tree(0, v);
-                    exit(121);
+//                    bt0->not_to_add = 1.99;
+                    for (auto v: vs1) bt0->add_idents_to_tree(111, v, calcs);
+//                    printf("------------------------1-----------------------------\n\n\n");
+//                    bt0->output_DOT();
 
+
+
+//                    exit(121);
+//                    std::cout << "calcs " << calcs << std::endl;
                     bt1->clear();
-                    bt1->not_to_add = 1.99;
-                    for (auto v: vs2) bt1->add_idents_to_tree(0, v);
-                    bt1->pre_compare();
+//                    bt1->not_to_add = 1.99;
+                    for (auto v: vs2) bt1->add_idents_to_tree(0, v, calcs);
+//                    std::cout << "calcs " << calcs << std::endl;
+//                    printf("------------------------2-----------------------------\n\n\n");
+//                    bt1->output_DOT();
+//                    bt1->pre_compare();
+//                    bt1->output_DOT();
 
                     end = std::chrono::steady_clock::now();
                     elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
                     printf(" BT build: %lu", elapsed_mks.count());
-                    bt1->output_DOT();
-                    exit(111);
+//                    bt1->output_DOT();
+//                    exit(111);
                     begin = std::chrono::steady_clock::now();
-                    cs = (bt0->to_tree(bt1)).similarity;
+                    auto resp = bt0->to_tree(bt1, .4);
+                    cs = resp.similarity;
                     end = std::chrono::steady_clock::now();
                     elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
-                    printf(" exec: %lu cd:%f", elapsed_mks.count(), cs);
-
-                    begin = std::chrono::steady_clock::now();
-                    bt0->clear();
-                    bt0->not_to_add = 1.99;
-//                for (auto v: vs1) bt0->add_idents_to_tree_cached(0, v);
-                    for (auto v: vs1) bt0->add_idents_to_tree(0, v);
-                    bt0->pre_compare();
-                    bt1->clear();
-                    bt1->not_to_add = 1.99;
-//                for (auto v: vs2) bt1->add_idents_to_tree_cached(0, v);
-                    for (auto v: vs2) bt1->add_idents_to_tree(0, v);
-                    bt1->pre_compare();
-                    end = std::chrono::steady_clock::now();
-                    elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
-                    printf("    C .99 build: %lu", elapsed_mks.count());
-
-                    begin = std::chrono::steady_clock::now();
-                    cs = bt0->to_tree(bt1).similarity;
-                    end = std::chrono::steady_clock::now();
-                    elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
-                    printf(" exec: %lu cd:%f", elapsed_mks.count(), cs);
+                    printf(" exec: %lu cd:%f  ix: %i %i", elapsed_mks.count(), cs, resp.node1->id, resp.node2->id);
+//
+//                    begin = std::chrono::steady_clock::now();
+//                    bt0->clear();
+//                    bt0->not_to_add = 1.99;
+////                for (auto v: vs1) bt0->add_idents_to_tree_cached(0, v);
+//                    for (auto v: vs1) bt0->add_idents_to_tree(0, v, calcs);
+//                    bt0->pre_compare();
+//                    bt1->clear();
+//                    bt1->not_to_add = 1.99;
+////                for (auto v: vs2) bt1->add_idents_to_tree_cached(0, v);
+//                    for (auto v: vs2) bt1->add_idents_to_tree(0, v, calcs);
+//                    bt1->pre_compare();
+//                    end = std::chrono::steady_clock::now();
+//                    elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
+//                    printf("    C .99 build: %lu", elapsed_mks.count());
+//
+//                    begin = std::chrono::steady_clock::now();
+//                    cs = bt0->to_tree(bt1).similarity;
+//                    end = std::chrono::steady_clock::now();
+//                    elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
+//                    printf(" exec: %lu cd:%f", elapsed_mks.count(), cs);
 
                     printf("\n");
+//                    exit(111);
                 }
     }
 //    exit(200);
-    auto b1 = std::make_shared<reid_tree::IdentsBBase<float, int>>(1000);
-    auto b2 = std::make_shared<reid_tree::IdentsBBase<float, int>>(2000);
+    auto b1 = std::make_shared<reid_tree::IdentsBBase<float, int>>(500);
+    auto b2 = std::make_shared<reid_tree::IdentsBBase<float, int>>(500);
 //    reid_tree::IdentsBase<float, int> b2(20);
 //    exit(100);
-    for (auto i = 0; i < 3; i++) {
+    for (auto i = 0; i < 33; i++) {
 
         struct rusage usage{};
         getrusage(RUSAGE_SELF, &usage);
@@ -148,10 +171,10 @@ int main() {
         for (auto &v: vs2) b2->add_ident(v);
         begin = std::chrono::steady_clock::now();
         prep_mks0 = std::chrono::duration_cast<std::chrono::microseconds>(begin - begin_prep0);
-        auto cs1 = b1->get_best_match(b2);
+        auto cs1 = b1->get_best_match(b2, .4);
         end = std::chrono::steady_clock::now();
         elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
-        auto cs2 = b1->get_best_match(b2);
+        auto cs2 = b1->get_best_match(b2, .4);
         end2 = std::chrono::steady_clock::now();
 //        prep_mks = std::chrono::duration_cast<std::chrono::microseconds>(begin - begin_prep);
         elapsed_mks2 = std::chrono::duration_cast<std::chrono::microseconds>(end2 - end);

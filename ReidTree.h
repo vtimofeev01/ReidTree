@@ -12,9 +12,8 @@
 #include <memory>
 
 #define add_vector_log //printf
-#define add_btree_vector_log // printf
 #define tree_comp_log  // printf
-#define btree_comp_log  //printf
+//#define btree_comp_log  //printf
 namespace reid_tree {
 
     template<class T>
