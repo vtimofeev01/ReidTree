@@ -23,8 +23,8 @@ int main() {
     std::cout << "The time: " << elapsed_mks.count() << " mks\n";
 
     FT max_cs{0};
-//    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_00020.1.csv");
-    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_0001.csv");
+    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_00020.1.csv");
+//    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_0001.csv");
 //    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_5499_0001.csv");
     auto vs2 = reid_tree::ReadCSVFile<FT>("../samples/datas_00020.1.csv");
 //    auto vs2 = reid_tree::ReadCSVFile<FT>("../samples/datas_5499_0002.csv");
@@ -53,7 +53,7 @@ int main() {
 
     std::vector<float> not_to_adds{.99, 1.1};
     std::vector<float> same_similarity{.9};
-    std::vector<int> leaf_size{2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13};
+    std::vector<int> leaf_size{2, 3, 4, 5};
 
     printf("\n");
 
@@ -155,8 +155,8 @@ int main() {
                 }
     }
 //    exit(200);
-    auto b1 = std::make_shared<reid_tree::IdentsBBase<float, int>>(500);
-    auto b2 = std::make_shared<reid_tree::IdentsBBase<float, int>>(500);
+    auto b1 = std::make_shared<reid_tree::IdentsBBase<float, int>>(20);
+    auto b2 = std::make_shared<reid_tree::IdentsBBase<float, int>>(20);
 //    reid_tree::IdentsBase<float, int> b2(20);
 //    exit(100);
     for (auto i = 0; i < 33; i++) {
@@ -166,21 +166,29 @@ int main() {
         long new_size = usage.ru_maxrss;
         printf("mem:%lu ", new_size);
 
-        begin_prep0 = std::chrono::steady_clock::now();
+        begin = std::chrono::steady_clock::now();
         for (auto &v: vs1) b1->add_ident(v);
         for (auto &v: vs2) b2->add_ident(v);
+        end = std::chrono::steady_clock::now();
+        elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
+        printf(" prep:%lu", elapsed_mks.count());
+
+        printf(" b1 sz=%lu tree=%i", b1->idents.size(), b1->indexed_data->size());
+        printf(" b2 sz=%lu tree=%i", b2->idents.size(), b2->indexed_data->size());
+
         begin = std::chrono::steady_clock::now();
-        prep_mks0 = std::chrono::duration_cast<std::chrono::microseconds>(begin - begin_prep0);
         auto cs1 = b1->get_best_match(b2, .4);
         end = std::chrono::steady_clock::now();
         elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
-        auto cs2 = b1->get_best_match(b2, .4);
-        end2 = std::chrono::steady_clock::now();
-//        prep_mks = std::chrono::duration_cast<std::chrono::microseconds>(begin - begin_prep);
-        elapsed_mks2 = std::chrono::duration_cast<std::chrono::microseconds>(end2 - end);
-        printf("cs: %f %f prep %lu %lu after build %lu\n", cs1.similarity, cs2.similarity, prep_mks0.count(), elapsed_mks.count(),
-               elapsed_mks2.count());
+        printf(" 1st:%lu cs:%f", elapsed_mks.count(), cs1.similarity);
 
+        begin = std::chrono::steady_clock::now();
+        auto cs2 = b1->get_best_match(b2, .4);
+        end = std::chrono::steady_clock::now();
+        elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
+        printf(" 2nd:%lu cs:%f", elapsed_mks.count(), cs2.similarity);
+
+        printf("\n");
     }
 
 

@@ -7,7 +7,8 @@
 #include <iostream>
 #include <cassert>
 //#define btree_comp_log(...)  printf(__VA_ARGS__);
-#define btree_comp_log(...)  //__VA_ARGS__;
+//#define btree_comp_log(...)  //__VA_ARGS__;
+#define btree_comp_log(...)  if (false) printf(__VA_ARGS__);
 //#define add_btree_vector_log  printf
 
 namespace reid_tree{
@@ -15,6 +16,8 @@ namespace reid_tree{
     class BNode {
     public:
         T cross_sim;
+        T cs_left;
+        T cs_right;
 //        T parent_cross_sim;
         TKey id;
         TKey level;
@@ -25,7 +28,7 @@ namespace reid_tree{
         std::shared_ptr<BNode<T, TKey, TUID>> right;
         BNode(TKey _id, TUID uid_, const std::vector<T>& _data): id(_id), uid(uid_), data(_data), cross_sim(1),
                                                         left(nullptr), right(nullptr), prnt(nullptr),
-                                                        level(0) {};
+                                                        level(0), cs_left(-2), cs_right(-2) {};
 
         void clear(){
             if (left != nullptr) {
@@ -38,7 +41,6 @@ namespace reid_tree{
             }
         }
         bool isNode() {return (left != nullptr) || (right != nullptr);}
-
         std::string to_str(){
             std::stringstream out;
             out << *this;
@@ -71,8 +73,8 @@ namespace reid_tree{
     std::ostream& operator << (std::ostream& os, const BNode<T,TKey,TUID>& nd) {
         os.precision(3);
         os << nd.id << "(uid:" << nd.uid << ", lvl:" << nd.level<< ")";
-        os << " left="; if  (nd.left == nullptr) os << "null"; else os << nd.left->id ;//<< ":" << nd.sim_left;
-        os << " right="; if (nd.right == nullptr) os << "null"; else os << nd.right->id;// << ":" << nd.sim_right;
+        os << " left="; if  (nd.left == nullptr) os << "null"; else os << nd.left->id << ":" << nd.cs_left;
+        os << " right="; if (nd.right == nullptr) os << "null"; else os << nd.right->id << ":" << nd.cs_right;
         os << " cs:" << nd.cross_sim;
         return os;
     }
@@ -95,28 +97,16 @@ namespace reid_tree{
         using pairTkey = std::pair<T_key, T_key>;
         using mapPairTKeyT = std::map<pairTkey, T>;
     public:
-//        T not_to_add = 1.99;
-        // threshold for queue cleaning
 
         pTBNode root_ = nullptr;
         int counter = -1;
         // to check added Node length and to reserve memory
         size_t default_vec_len = 0;
         mapPairTKeyT cross_cost;
-        const T add_protector = .99;
+        T add_protector = .99;
 
         T Node2NodeCompare(const pTBNode&  n1, const pTBNode&  n2){
             return vec_to_vec_similarity(n1->data, n2->data);
-        }
-
-        T Node2NodeCompareCached(const pTBNode&  n1, const pTBNode&  n2, mapPairTKeyT& cache){
-            auto ix = std::make_pair(n1->id, n2->id);
-            if (cache.find(ix) == cache.end()) {
-                auto cs = vec_to_vec_similarity(n1->data, n2->data);
-                cache[ix] = cs;
-                return cs;
-            }
-            return cache[ix];
         }
 
         void clear() {
@@ -175,7 +165,7 @@ namespace reid_tree{
                 ++similarity_calcs;
                 new_to_right_cs = Node2NodeCompare(pointer->right, insert_node);
                 ++similarity_calcs;
-                if ((new_to_left_cs > add_protector) || (new_to_right_cs > add_protector)) { return -1; printf("|");}
+                if ((new_to_left_cs > add_protector) || (new_to_right_cs > add_protector)) {return -1; }
                 pointer_cross_cs = pointer->cross_sim;
                 goes_to_child = (pointer_cross_cs < new_to_right_cs) && (pointer_cross_cs < new_to_left_cs);
                 left_more_similar = new_to_left_cs > new_to_right_cs;
@@ -188,7 +178,8 @@ namespace reid_tree{
                     pointer = pointer->left;
 //                    add_btree_vector_log("   <%i> pushed to left <%i> cur cross:%f to_let:%f to_right:%f\n", insert_node->id, pointer->id, pointer_cross_cs, new_to_left_cs, new_to_right_cs);
                     continue;
-                } else if (goes_to_child) {
+                }
+                else if (goes_to_child) {
                     pointer = pointer->right;
 //                    add_btree_vector_log("   <%i> pushed to right <%i> cur cross:%f to_let:%f to_right:%f\n", insert_node->id, pointer->id, pointer_cross_cs, new_to_left_cs, new_to_right_cs);
                     continue;}
@@ -196,12 +187,15 @@ namespace reid_tree{
 //                    add_btree_vector_log("   <%i> is set to left. <%i> pushed up. cross cs: %f -> %f\n", insert_node->id, pointer->left->id, pointer->cross_sim, new_to_right_cs);
 //                    add_btree_vector_log("   insert_node <%s> must be set to pointer <%s> left. <%s> pushed up. cross cs: %f -> %f \n", insert_node->to_str().c_str(), pointer->to_str().c_str(), pointer->left->to_str().c_str(), pointer->cross_sim, new_to_right_cs);
                     pointer->cross_sim = new_to_right_cs;
+                    pointer->cs_left = new_to_left_cs;
                     swap_nodes(pointer->left, insert_node);
                     pointer = pointer->left;
                     continue;
-                } else {
+                }
+                else {
 //                    add_btree_vector_log("   insert_node <%s> must be set to pointer <%s> right. <%s> pushed up. cross cs: %f -> %f \n", insert_node->to_str().c_str(), pointer->to_str().c_str(), pointer->right->to_str().c_str(), pointer->cross_sim, new_to_left_cs);
                     pointer->cross_sim = new_to_left_cs;
+                    pointer->cs_right = new_to_right_cs;
                     swap_nodes(pointer->right, insert_node);
                     pointer = pointer->right;
 
@@ -214,44 +208,28 @@ namespace reid_tree{
             return counter;
         }
 
-        void pre_compare() {};
-
-
-
-#define CD_block \
-        sim = Node2NodeCompare(cur1, cur2); \
-        passed.insert(std::make_pair(cur1->id, cur2->id));   \
-        ++node_calculated;                  \
-        if (sim > out.similarity) {out.similarity = sim; out.node1 = cur1; out.node2 = cur2;} \
-        if (sim > similarity_for_same) return out; \
-        if (sim > parent_limit && cur1->isNode() && cur2->isNode()) {p_queue.push(std::make_pair(std::make_pair(cur1, cur2), sim)); \
-        }
 
 #define CD_block2(XX, YY) \
         sim = Node2NodeCompare(XX, YY); \
-        passed.insert(std::make_pair((XX)->id, (YY)->id)); \
         btree_comp_log(" looked %i-%i", (XX)->id, (YY)->id);         \
         ++node_calculated;\
         btree_comp_log(" Nodes:%i%i sim: %f par.lim: %f", (XX)->isNode(), (YY)->isNode(), sim, parent_limit); \
         if (sim > out.similarity) {out.similarity = sim; out.node1 = XX; out.node2 = YY; btree_comp_log(" new_max");} \
         if (sim > similarity_for_same) return out; \
-        if ((sim > parent_limit * expected_min_sim)) {p_queue.push(std::make_pair(std::make_pair(XX, YY), sim)); \
+        if (sim > parent_limit * expected_min_sim)  {p_queue.push(std::make_pair(std::make_pair(XX, YY), sim)); \
         btree_comp_log(" added %i %i, queue:%lu", (XX)->id, (YY)->id, p_queue.size());}
 
-//        && (XX)->isNode() && (YY)->isNode()
         response_t2t<T, T_key, TUID> to_tree(std::shared_ptr<BTree> b, T expected_min_sim) {
             response_t2t<T, T_key, TUID> out{nullptr, nullptr, 0.};
             T similarity_for_same=.95;
 
             if (root_ == nullptr || b->root_ == nullptr) return out;
-            auto q_sort = [](const queuePairElement &a, const queuePairElement &b) { return a.second < b.second; };
+//            auto q_sort = [](const queuePairElement &a, const queuePairElement &b) { return a.second < b.second; };
 //            std::priority_queue<queuePairElement, std::vector<queuePairElement>, decltype(q_sort)> p_queue(q_sort);
             std::queue<queuePairElement> p_queue;
 
             T max_similarity{0};
             int node_calculated{0};
-            std::set<std::pair<T_key, T_key>> passed;
-            std::pair<T_key, T_key> key_pass;
 
             p_queue.push(std::make_pair(std::make_pair(root_, b->root_), 1));
 
@@ -259,31 +237,17 @@ namespace reid_tree{
             bool needs_to_add;
             pTBNode cur1, cur2;
             T parent_limit = 0;
-            btree_comp_log("\n");
-//            CD_block2(root_->left, b->root_->left)
-            btree_comp_log("\n");
-//            CD_block2(root_->left, b->root_->right)
-            btree_comp_log("\n");
-//            CD_block2(root_->right, b->root_->right)
-            btree_comp_log("\n");
-//            CD_block2(root_->right, b->root_->left)
-            btree_comp_log("\n");
 
             while (!p_queue.empty()) {
-//                queuePairElement v = p_queue.top();
                 queuePairElement v = p_queue.front();
                 auto [node1, node2] = v.first;
                 p_queue.pop();
-//                key_pass = std::make_pair(node1->id, node2->id);
-//                if (passed.find(key_pass) != passed.end()) continue;
-
                 btree_comp_log("\ngot %i-%i [%s %s] similarity: %f   calculated:%i queue:%lu crosses:(1) %f (2) %f\n",
                                node1->id, node2->id,
                                node1->to_str().c_str(), node2->to_str().c_str(), node2->level, v.second,
                                node_calculated, p_queue.size(), node1->cross_sim, node2->cross_sim);
                 parent_limit = node1->cross_sim * node2-> cross_sim;
-                if (node1->isNode() && (node2->isNode()) && (node1->level == node2->level)) {
-//                if (node1->isNode() && node2->isNode()) {
+                if (node1->level == node2->level) {
                     if ((node1->left != nullptr) && (node2->left!= nullptr)) {
                         btree_comp_log(" node1->L <%s> && node2->L <%s>", node1->left->to_str().c_str(), node2->left->to_str().c_str());
                         CD_block2(node1->left, node2->left)
@@ -309,7 +273,6 @@ namespace reid_tree{
                     }
                 }
 
-//                if ((node1->id != 1) && (node1->level <= node2->level)) {
                 if ((node1->level > 0) && (node1->level <= node2->level)) {
                     parent_limit = node1->prnt->cross_sim * node2->cross_sim;
                     if (node2->left != nullptr) {
@@ -325,7 +288,6 @@ namespace reid_tree{
                     }
                 }
 
-//                if (node2->id != 1 && (node1->level >= node2->level)) {
                 if ((node2->level > 0) && (node1->level >= node2->level)) {
                     parent_limit = node2->prnt->cross_sim * node1-> cross_sim;
 //                    btree_comp_log("  node2 to node1 children\n");
@@ -346,109 +308,6 @@ namespace reid_tree{
             return out;
         }
 
-        response_t2t<T, T_key, TUID> to_tree2(std::shared_ptr<BTree> b) {
-            response_t2t<T, T_key, TUID> out{nullptr, nullptr, 0.};
-            T similarity_for_same=.95;
-            // fill with roots
-            if (root_ == nullptr || b->root_ == nullptr) return out;
-            auto q_sort = [](const queuePairElement &a, const queuePairElement &b) { return a.second < b.second; };
-            std::priority_queue<queuePairElement, std::vector<queuePairElement>, decltype(q_sort)> p_queue(q_sort);
-            T max_similarity{0};
-            int node_calculated{0};
-            std::set<std::pair<T_key, T_key>> passed;
-            p_queue.push(std::make_pair(std::make_pair(root_, b->root_), 1));
-            T sim;
-            bool needs_to_add;
-
-            std::set<std::pair<T_key, T_key>> check;
-            pTBNode cur1, cur2;
-
-
-            while (!p_queue.empty()) {
-                queuePairElement v = p_queue.top();
-                auto [node1, node2] = v.first;
-                p_queue.pop();
-
-//                btree_comp_log("\ngot [%i(%i) %i(%i)] similarity: %f   calculated:%i queue:%lu crosses:(1) %f (2) %f\n",
-//                               node1->id, node1->isNode(), node2->id, node2->isNode(), v.second,
-//                               node_calculated, p_queue.size(), node1->cross_sim, node2->cross_sim);
-                auto parent_limit = node1->cross_sim * node2-> cross_sim;
-                if (node1->isNode() && (node2->isNode()) && (node1->level == node2->level)) {
-                    if (node1->left && node2->left) {
-
-                        cur1 = node1->left;
-                        cur2 = node2->left;
-//                        btree_comp_log(" node1->left && node2->left <%i %i>", cur1->id, cur2->id);
-                        CD_block
-//                        btree_comp_log("\n");
-                    }
-
-                    if (node1->left && node2->right) {
-//                        btree_comp_log(" node1->left && node2->right ");
-                        cur1 = node1->left;
-                        cur2 = node2->right;
-                        CD_block
-//                        btree_comp_log("\n");
-                    }
-
-                    if (node1->right && node2->left) {
-//                        btree_comp_log(" node1->right && node2->left ");
-                        cur1 = node1->right;
-                        cur2 = node2->left;
-                        CD_block
-//                        btree_comp_log("\n");
-                    }
-
-                    if (node1->right && node2->right) {
-//                        btree_comp_log(" node1->right && node2->right ");
-                        cur1 = node1->right;
-                        cur2 = node2->right;
-                        CD_block
-//                        btree_comp_log("\n");
-                    }
-                }
-
-                if ((node1->id != 1) && node2->isNode() && (node1->level <= node2->level)) {
-                    parent_limit = node1->prnt->cross_sim * node2->cross_sim;
-//                    btree_comp_log("  node1 to node2 children\n");
-                    if (node2->left) {
-                        cur1 = node1;
-                        cur2 = node2->left;
-                        CD_block
-//                        btree_comp_log("\n");
-                    }
-
-                    if (node2->right) {
-                        cur1 = node1;
-                        cur2 = node2->right;
-                        CD_block
-//                        btree_comp_log("\n");
-                    }
-                }
-
-                if (node2->id != 1 && (!node1->isNode() && (node1->level >= node2->level))) {
-                    parent_limit = node2->prnt->cross_sim * node1-> cross_sim;
-//                    btree_comp_log("  node2 to node1 children\n");
-                    if (node1->left) {
-                        cur1 = node1->left;
-                        cur2 = node2;
-                        CD_block
-//                        btree_comp_log("\n");
-                    }
-
-                    if (node1->right) {
-                        cur1 = node1->right;
-                        cur2 = node2;
-                        CD_block
-//                        btree_comp_log("\n");
-                    }
-                }
-            }
-
-//            btree_comp_log("nodes:%i\n", node_calculated, p_queue.size());
-            return out;
-        }
-
         int size() {
             int out{0};
             if (!root_) return out;
@@ -458,8 +317,8 @@ namespace reid_tree{
             while (! q.empty()) {
                 cur = q.front();
                 out++;
-                if (cur->left) q.push(cur->left);
-                if (cur->right) q.push(cur->right);
+                if (cur->left != nullptr) q.push(cur->left);
+                if (cur->right != nullptr) q.push(cur->right);
                 q.pop();
             }
             return out;
@@ -521,23 +380,22 @@ namespace reid_tree{
         Idents idents;
         spBTree indexed_data;
 
-        explicit IdentsBBase(int idents_count = 20) : changed(true), erase_store_dents_per_time(idents_count * 2 / 3),
-
-        max_store_idents(idents_count + erase_store_dents_per_time) {
+        explicit IdentsBBase(int idents_count = 20) : changed(false), erase_store_dents_per_time(idents_count * 2 / 3)
+         {
             indexed_data = std::make_shared<BTreeTUID>();
+            max_store_idents = idents_count + erase_store_dents_per_time;
+//            printf("ident:%i - %i\n", max_store_idents, erase_store_dents_per_time);
         }
 
         void add_ident(Ident in_data) {
             int c;
             idents.push_back(std::make_unique<Ident>(in_data));
             if (idents.size() > max_store_idents) {
-                for (int i = 0; i < erase_store_dents_per_time; i++)
-                    idents.pop_front();
+                for (int i = 0; i < erase_store_dents_per_time; i++) { idents.pop_front();}
                 changed = true;
             }
-            else {
+            else if (!changed) {
                 indexed_data->add_idents_to_tree(0, in_data, c);
-//                indexed_data->add_idents_to_tree(0, in_data, c);
             }
         }
 
@@ -547,7 +405,9 @@ namespace reid_tree{
             if (changed) {
                 changed = false;
                 indexed_data->clear();
+//                printf(" changed sz=%lu tree=%i", idents.size(), indexed_data->size());
                 for (auto &it: idents) indexed_data->add_idents_to_tree(0, *it, c);
+//                printf("->%i", indexed_data->size());
             }
 
             if (idents_base2->changed) {
