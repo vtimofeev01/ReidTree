@@ -6,10 +6,12 @@
 #include <set>
 #include <iostream>
 #include <cassert>
+
 //#define btree_comp_log(...)  printf(__VA_ARGS__);
-//#define btree_comp_log(...)  //__VA_ARGS__;
 #define btree_comp_log(...)  if (false) printf(__VA_ARGS__);
-//#define add_btree_vector_log  printf
+
+//#define add_btree_vector_log(...)  printf(__VA_ARGS__);
+#define add_btree_vector_log(...)  if (false) printf(__VA_ARGS__);
 
 namespace reid_tree{
     template <typename T, typename TKey, typename TUID>
@@ -46,6 +48,19 @@ namespace reid_tree{
             out << *this;
             return out.str();
         }
+
+        std::string label(){
+            std::stringstream out;
+            out.precision(3);
+            out << id << "\\n" << " uid:" << uid << " lvl:" << level << "\\n";
+            out << " L:"; if  (left == nullptr) out << "x"; else out << left->id;
+            out << " R:"; if (right == nullptr) out << "x"; else out << right->id;
+            out << "\\n";
+            out << " cs:" << cross_sim;
+            return out.str().c_str();
+        }
+
+
     };
 
     template <typename T, typename TKey, typename TUID>
@@ -72,9 +87,9 @@ namespace reid_tree{
     template <typename T, typename TKey, typename TUID>
     std::ostream& operator << (std::ostream& os, const BNode<T,TKey,TUID>& nd) {
         os.precision(3);
-        os << nd.id << "(uid:" << nd.uid << ", lvl:" << nd.level<< ")";
-        os << " left="; if  (nd.left == nullptr) os << "null"; else os << nd.left->id << ":" << nd.cs_left;
-        os << " right="; if (nd.right == nullptr) os << "null"; else os << nd.right->id << ":" << nd.cs_right;
+        os << nd.id << " uid:" << nd.uid << " lvl:" << nd.level<< "";
+        os << " L:"; if  (nd.left == nullptr) os << "x"; else os << nd.left->id << "/" << nd.cs_left;
+        os << " R:"; if (nd.right == nullptr) os << "x"; else os << nd.right->id << "/" << nd.cs_right;
         os << " cs:" << nd.cross_sim;
         return os;
     }
@@ -129,24 +144,23 @@ namespace reid_tree{
             } else
                 assert(data_.size() == default_vec_len);
 //            output_DOT();
-//            add_btree_vector_log("\nenter\n");
+            add_btree_vector_log("\nenter\n");
             auto insert_node = std::make_shared<TBNode>(++counter, uid, std::vector<T>{data_});
-//            add_btree_vector_log("new node:%s\n", insert_node->to_str().c_str());
+            add_btree_vector_log("new node:%s\n", insert_node->to_str().c_str());
             pTBNode pointer = root_;
-            pTBNode old_pointer;
             T pointer_cross_cs, new_to_left_cs, new_to_right_cs;
             bool goes_to_child, left_more_similar;
-//            add_btree_vector_log("new pointer<%s> root is on <%s>\n", insert_node->to_str().c_str(), pointer->to_str().c_str());
+            add_btree_vector_log("new pointer<%s> root is on <%s>\n", insert_node->to_str().c_str(), pointer->to_str().c_str());
             int similarity_calcs{0};
             while (pointer != nullptr) { // !cur_node_list->empty()
-//                add_btree_vector_log("   insert_node<%s> pointer to <%s> \n", insert_node->to_str().c_str(), pointer->to_str().c_str());
+                add_btree_vector_log("  insert_node:%s -- pointer:%s \n", insert_node->to_str().c_str(), pointer->to_str().c_str());
                 // if node is not full
                 if (pointer->left == nullptr) {
                     insert_node->level = pointer->level + 1;
                     pointer->left = insert_node;
                     insert_node->prnt = pointer;
                     pointer->cross_sim = 1;
-//                    add_btree_vector_log("   added Node[%s] to Node[%s] as left \n", insert_node->to_str().c_str(), pointer->to_str().c_str());
+                    add_btree_vector_log("   added [%s] --left-- [%s] \n", insert_node->to_str().c_str(), pointer->to_str().c_str());
                     calcs +=similarity_calcs;
                     return counter;
                 } else if (pointer->right == nullptr) {
@@ -155,8 +169,8 @@ namespace reid_tree{
                     pointer->right = insert_node;
                     insert_node->prnt = pointer;
                     pointer->cross_sim = Node2NodeCompare(pointer->left, pointer->right);
-//                    add_btree_vector_log("   added Node[%s]  to Node[%s] as right with cross_sim: %f\n",
-//                                         insert_node->to_str().c_str(), pointer->to_str().c_str(), pointer->cross_sim );
+                    add_btree_vector_log("   added [%s] --right-- [%s] cross_sim: %f\n",
+                                         insert_node->to_str().c_str(), pointer->to_str().c_str(), pointer->cross_sim );
                     calcs += ++similarity_calcs;
                     return counter;
                 }
@@ -165,27 +179,29 @@ namespace reid_tree{
                 ++similarity_calcs;
                 new_to_right_cs = Node2NodeCompare(pointer->right, insert_node);
                 ++similarity_calcs;
-                if ((new_to_left_cs > add_protector) || (new_to_right_cs > add_protector)) {return -1; }
+
                 pointer_cross_cs = pointer->cross_sim;
                 goes_to_child = (pointer_cross_cs < new_to_right_cs) && (pointer_cross_cs < new_to_left_cs);
                 left_more_similar = new_to_left_cs > new_to_right_cs;
-//                add_btree_vector_log("    cross:%f left %f right %f to child:%i left_more_similar:%i\n",
-//                                     pointer_cross_cs,
-//                                     new_to_left_cs,
-//                                     new_to_right_cs,
-//                                     goes_to_child, left_more_similar);
+                add_btree_vector_log("    X:%f   L %f   R %f to child:%i left_more_similar:%i\n",
+                                     pointer_cross_cs,
+                                     new_to_left_cs,
+                                     new_to_right_cs,
+                                     goes_to_child, left_more_similar);
+                if ((new_to_left_cs > add_protector) || (new_to_right_cs > add_protector)) {
+                    add_btree_vector_log("    too similar\n"); return -1; }
                 if (goes_to_child && left_more_similar) {
                     pointer = pointer->left;
-//                    add_btree_vector_log("   <%i> pushed to left <%i> cur cross:%f to_let:%f to_right:%f\n", insert_node->id, pointer->id, pointer_cross_cs, new_to_left_cs, new_to_right_cs);
+                    add_btree_vector_log("   <%i> ....left...> <%i> cur cross:%f to_let:%f to_right:%f\n", insert_node->id, pointer->id, pointer_cross_cs, new_to_left_cs, new_to_right_cs);
                     continue;
                 }
                 else if (goes_to_child) {
                     pointer = pointer->right;
-//                    add_btree_vector_log("   <%i> pushed to right <%i> cur cross:%f to_let:%f to_right:%f\n", insert_node->id, pointer->id, pointer_cross_cs, new_to_left_cs, new_to_right_cs);
+                    add_btree_vector_log("   <%i> ....right....> <%i> cur cross:%f to_let:%f to_right:%f\n", insert_node->id, pointer->id, pointer_cross_cs, new_to_left_cs, new_to_right_cs);
                     continue;}
                 else if (left_more_similar) {
 //                    add_btree_vector_log("   <%i> is set to left. <%i> pushed up. cross cs: %f -> %f\n", insert_node->id, pointer->left->id, pointer->cross_sim, new_to_right_cs);
-//                    add_btree_vector_log("   insert_node <%s> must be set to pointer <%s> left. <%s> pushed up. cross cs: %f -> %f \n", insert_node->to_str().c_str(), pointer->to_str().c_str(), pointer->left->to_str().c_str(), pointer->cross_sim, new_to_right_cs);
+                    add_btree_vector_log("   <%s> --left-- <%s> left. <%s> pushed up. cross cs: %f -> %f \n", insert_node->to_str().c_str(), pointer->to_str().c_str(), pointer->left->to_str().c_str(), pointer->cross_sim, new_to_right_cs);
                     pointer->cross_sim = new_to_right_cs;
                     pointer->cs_left = new_to_left_cs;
                     swap_nodes(pointer->left, insert_node);
@@ -193,14 +209,14 @@ namespace reid_tree{
                     continue;
                 }
                 else {
-//                    add_btree_vector_log("   insert_node <%s> must be set to pointer <%s> right. <%s> pushed up. cross cs: %f -> %f \n", insert_node->to_str().c_str(), pointer->to_str().c_str(), pointer->right->to_str().c_str(), pointer->cross_sim, new_to_left_cs);
+                    add_btree_vector_log("   <%s>  --right-- <%s>. <%s> pushed up. cross cs: %f -> %f \n", insert_node->to_str().c_str(), pointer->to_str().c_str(), pointer->right->to_str().c_str(), pointer->cross_sim, new_to_left_cs);
                     pointer->cross_sim = new_to_left_cs;
                     pointer->cs_right = new_to_right_cs;
                     swap_nodes(pointer->right, insert_node);
                     pointer = pointer->right;
 
 
-//                    add_btree_vector_log("   next look: pointer <%s> node <%s>\n", pointer->to_str().c_str(), insert_node->to_str().c_str());
+                    add_btree_vector_log("   next look: pointer <%s> node <%s>\n", pointer->to_str().c_str(), insert_node->to_str().c_str());
                     continue;
                 }
             }
@@ -214,7 +230,9 @@ namespace reid_tree{
         btree_comp_log(" looked %i-%i", (XX)->id, (YY)->id);         \
         ++node_calculated;\
         btree_comp_log(" Nodes:%i%i sim: %f par.lim: %f", (XX)->isNode(), (YY)->isNode(), sim, parent_limit); \
-        if (sim > out.similarity) {out.similarity = sim; out.node1 = XX; out.node2 = YY; btree_comp_log(" new_max");} \
+        if (sim > out.similarity) {out.similarity = sim; out.node1 = XX; out.node2 = YY;                      \
+        btree_comp_log(" new_max");     \
+        drop_level = sim * sim;} \
         if (sim > similarity_for_same) return out; \
         if (sim > parent_limit * expected_min_sim)  {p_queue.push(std::make_pair(std::make_pair(XX, YY), sim)); \
         btree_comp_log(" added %i %i, queue:%lu", (XX)->id, (YY)->id, p_queue.size());}
@@ -222,6 +240,7 @@ namespace reid_tree{
         response_t2t<T, T_key, TUID> to_tree(std::shared_ptr<BTree> b, T expected_min_sim) {
             response_t2t<T, T_key, TUID> out{nullptr, nullptr, 0.};
             T similarity_for_same=.95;
+            T drop_level;
 
             if (root_ == nullptr || b->root_ == nullptr) return out;
 //            auto q_sort = [](const queuePairElement &a, const queuePairElement &b) { return a.second < b.second; };
@@ -242,10 +261,13 @@ namespace reid_tree{
                 queuePairElement v = p_queue.front();
                 auto [node1, node2] = v.first;
                 p_queue.pop();
+//                if (v.second < drop_level) { printf("shit_happens %i%i  ", node1->isNode(), node2->isNode()); continue; }
+                if (v.second < drop_level) { continue; }
                 btree_comp_log("\ngot %i-%i [%s %s] similarity: %f   calculated:%i queue:%lu crosses:(1) %f (2) %f\n",
                                node1->id, node2->id,
-                               node1->to_str().c_str(), node2->to_str().c_str(), node2->level, v.second,
+                               node1->to_str().c_str(), node2->to_str().c_str(), v.second,
                                node_calculated, p_queue.size(), node1->cross_sim, node2->cross_sim);
+                               
                 parent_limit = node1->cross_sim * node2-> cross_sim;
                 if (node1->level == node2->level) {
                     if ((node1->left != nullptr) && (node2->left!= nullptr)) {
@@ -335,7 +357,7 @@ namespace reid_tree{
             while (!q.empty()) {
                 pTBNode v = q.front();
                 std::cout.precision(3);
-                std::cout << v->id << " [ label=\"" << v->to_str().c_str() << "\"]" << std::endl;
+                std::cout << v->id << " [ label=\"" << v->label() << "\"]" << std::endl;
 //                std::cout << v->id << " [ label=\"" << v->id << "[" << v->level << "]";
 //                std::cout  <<" pt:" << v->prnt->cross_sim << " ";
 //                std::cout << " cs:" << v->cross_sim << "\"]" << std::endl;

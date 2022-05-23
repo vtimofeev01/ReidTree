@@ -23,8 +23,8 @@ int main() {
     std::cout << "The time: " << elapsed_mks.count() << " mks\n";
 
     FT max_cs{0};
-    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_00020.1.csv");
-//    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_0001.csv");
+//    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_00020.1.csv");
+    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_3503_0001.csv");
 //    auto vs1 = reid_tree::ReadCSVFile<FT>("../samples/datas_5499_0001.csv");
     auto vs2 = reid_tree::ReadCSVFile<FT>("../samples/datas_00020.1.csv");
 //    auto vs2 = reid_tree::ReadCSVFile<FT>("../samples/datas_5499_0002.csv");
@@ -53,7 +53,7 @@ int main() {
 
     std::vector<float> not_to_adds{.99, 1.1};
     std::vector<float> same_similarity{.9};
-    std::vector<int> leaf_size{2, 3, 4, 5};
+    std::vector<int> leaf_size{2, 2, 2, 3,  3, 4, 5};
 
     printf("\n");
 
@@ -76,12 +76,12 @@ int main() {
                     tr1->clear();
                     tr0->not_to_add = nta;
                     tr0->max_node_size = ls;
-                    auto tree_size_1 = reid_tree::VecToTree<float, int>(tr0, vs1);
+                    auto tree_size_1 = reid_tree::vector_to_tree<float, int>(tr0, vs1);
                     tr0->pre_compare();
 
                     tr1->not_to_add = nta;
                     tr1->max_node_size = ls;
-                    auto tree_size_2 = reid_tree::VecToTree<float, int>(tr1, vs2);
+                    auto tree_size_2 = reid_tree::vector_to_tree<float, int>(tr1, vs2);
                     tr1->pre_compare();
                     end = std::chrono::steady_clock::now();
                     elapsed_mks = std::chrono::duration_cast<std::chrono::microseconds>(end - begin);
@@ -159,6 +159,14 @@ int main() {
     auto b2 = std::make_shared<reid_tree::IdentsBBase<float, int>>(20);
 //    reid_tree::IdentsBase<float, int> b2(20);
 //    exit(100);
+    auto trt   = std::make_shared<reid_tree::BTree<float, int>>();
+    int calcs2{0};
+    for (auto i = 0; i < 15; i++) {
+        auto z{0};
+        for (auto v: vs1) trt->add_idents_to_tree(++z, v, calcs2);
+        printf(" calcs %i size %i\n", calcs2, trt->size());
+    }
+//    trt->output_DOT();
     for (auto i = 0; i < 33; i++) {
 
         struct rusage usage{};
